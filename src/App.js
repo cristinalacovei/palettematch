@@ -1,24 +1,36 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import PaletteGenerator from "./components/PaletteGenerator";
+import SavedPalettes from "./components/SavedPalettes";
+import ThemeToggle from "./components/ToggleTheme";
+import ImagePalette from "./components/ImagePalette";
+import HomePage from "./components/HomePage";
+import "./App.css"; // 🔥 importă fișierul cu stilul pentru navbar
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <ThemeToggle />
+
+      <nav className="navbar">
+        <Link to="/genereaza" className="nav-link">
+          🎨 Generează
+        </Link>
+        <Link to="/salvate" className="nav-link">
+          📁 Paletele mele
+        </Link>
+        <Link to="/din-imagine" className="nav-link">
+          🎞️ Din imagine
+        </Link>
+      </nav>
+
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/genereaza" element={<PaletteGenerator />} />
+        <Route path="/salvate" element={<SavedPalettes />} />
+        <Route path="/din-imagine" element={<ImagePalette />} />
+      </Routes>
+    </Router>
   );
 }
 

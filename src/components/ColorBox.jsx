@@ -14,9 +14,9 @@ function ColorBox({ color }) {
       onClick={copyColor}
       className="color-box"
       style={{ backgroundColor: color }}
-      title="Click pentru a copia HEX"
+      title="Click to copy HEX"
     >
-      {copied ? "Copiat!" : color}
+      {copied ? "Copied!" : color}
     </div>
   );
 }

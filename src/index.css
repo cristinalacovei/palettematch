@@ -1,18 +1,83 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   width: 100%;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  transition: background 0.3s ease;
+}
+
+body {
+  color: #333;
+  line-height: 1.6;
 }
 
 body.dark-mode {
-  background-color: #121212;
+  background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
   color: #f5f5f5;
+  background-attachment: fixed;
 }
 
-/* Asigură-te că root-ul aplicației ocupă tot spațiul */
+/* Root application container */
 #root {
   min-height: 100vh;
-  background-color: inherit;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #7a4fff, #ff5733);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6a3fff, #ff4733);
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Focus visible styling for accessibility */
+:focus-visible {
+  outline: 2px solid #7a4fff;
+  outline-offset: 2px;
+}
+
+body.dark-mode :focus-visible {
+  outline-color: #ff8844;
+}
+
+/* Selection styling */
+::selection {
+  background-color: #7a4fff;
+  color: white;
+}
+
+body.dark-mode ::selection {
+  background-color: #ff8844;
+  color: #1a1a2e;
 }

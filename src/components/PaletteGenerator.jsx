@@ -15,14 +15,15 @@ const PALETTE_TYPES = [
 
 const PALETTE_DESCRIPTIONS = {
   analog:
-    "Culori apropiate pe roata culorilor (ex: portocaliu, roșu-portocaliu, roșu).",
-  complement: "Culoarea opusă pe roata culorilor (ex: albastru și portocaliu).",
-  triad: "Trei culori echidistante (ex: roșu, galben, albastru).",
+    "Colors close together on the color wheel (e.g., orange, red-orange, red).",
+  complement: "Color opposite on the color wheel (e.g., blue and orange).",
+  triad:
+    "Three colors equidistant on the color wheel (e.g., red, yellow, blue).",
   tetradic:
-    "Două perechi de culori complementare (ex: roșu-verde și galben-violet).",
-  monochrome: "Aceeași culoare cu variații de intensitate și saturație.",
+    "Two pairs of complementary colors (e.g., red-green and yellow-violet).",
+  monochrome: "Same color with variations in lightness and saturation.",
   "split-complement":
-    "O culoare + cele două vecine ale complementarei (ex: roșu + galben-verde și albastru-verzui).",
+    "One color plus the two neighbors of its complement (e.g., red + yellow-green and blue-green).",
 };
 
 function PaletteGenerator() {
@@ -158,14 +159,14 @@ function PaletteGenerator() {
       </div>
 
       <button className="generate-button" onClick={generatePalette}>
-        Generează paleta
+        Generate Palette
       </button>
 
       {colors.length > 0 && (
         <div style={{ marginTop: "20px" }}>
           <input
             type="text"
-            placeholder="Nume paletă"
+            placeholder="Palette name"
             value={paletteName}
             onChange={(e) => setPaletteName(e.target.value)}
             style={{
@@ -183,7 +184,7 @@ function PaletteGenerator() {
             onClick={saveCurrentPalette}
             style={{ backgroundColor: "#2ecc71" }}
           >
-            💾 Salvează paleta
+            💾 Save Palette
           </button>
         </div>
       )}

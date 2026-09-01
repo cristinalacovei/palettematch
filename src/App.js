@@ -5,7 +5,7 @@ import SavedPalettes from "./components/SavedPalettes";
 import ThemeToggle from "./components/ToggleTheme";
 import ImagePalette from "./components/ImagePalette";
 import HomePage from "./components/HomePage";
-import "./App.css"; // 🔥 importă fișierul cu stilul pentru navbar
+import "./App.css";
 
 function App() {
   return (
@@ -13,22 +13,22 @@ function App() {
       <ThemeToggle />
 
       <nav className="navbar">
-        <Link to="/genereaza" className="nav-link">
-          🎨 Generează
+        <Link to="/generate" className="nav-link">
+          🎨 Generate
         </Link>
-        <Link to="/salvate" className="nav-link">
-          📁 Paletele mele
+        <Link to="/saved" className="nav-link">
+          📁 My Palettes
         </Link>
-        <Link to="/din-imagine" className="nav-link">
-          🎞️ Din imagine
+        <Link to="/from-image" className="nav-link">
+          🎞️ From Image
         </Link>
       </nav>
 
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/genereaza" element={<PaletteGenerator />} />
-        <Route path="/salvate" element={<SavedPalettes />} />
-        <Route path="/din-imagine" element={<ImagePalette />} />
+        <Route path="/generate" element={<PaletteGenerator />} />
+        <Route path="/saved" element={<SavedPalettes />} />
+        <Route path="/from-image" element={<ImagePalette />} />
       </Routes>
     </Router>
   );

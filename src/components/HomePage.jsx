@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "./HomePage.css";
 
 function HomePage() {
   const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("theme") === "dark"
+    localStorage.getItem("theme") === "dark",
   );
 
   useEffect(() => {
@@ -11,10 +12,10 @@ function HomePage() {
       setDarkMode(localStorage.getItem("theme") === "dark");
     };
 
-    // Ascultă schimbarea temei
+    // Listen for theme changes
     window.addEventListener("themeChange", updateTheme);
 
-    // Curățare la demontare
+    // Cleanup on unmount
     return () => {
       window.removeEventListener("themeChange", updateTheme);
     };
@@ -22,14 +23,16 @@ function HomePage() {
 
   const containerStyle = {
     textAlign: "center",
-    padding: "60px 20px",
+    padding: "80px 20px",
     background: darkMode
-      ? "linear-gradient(135deg, #1f1f2f 0%, #2a1a40 50%, #2c2c2c 100%)"
-      : "linear-gradient(135deg, #f2f2f2 0%, #eae6f9 50%, #f8f8ff 100%)",
+      ? "linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%)"
+      : "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 50%, #e8e8f5 100%)",
     minHeight: "100vh",
     color: darkMode ? "#f5f5f5" : "#222",
     fontFamily: "'Segoe UI', sans-serif",
     transition: "all 0.3s ease-in-out",
+    backgroundAttachment: "fixed",
+    position: "relative",
   };
 
   const titleStyle = {
@@ -60,38 +63,24 @@ function HomePage() {
     textDecoration: "none",
   };
 
-  const buttonStyle = {
-    padding: "15px 30px",
-    borderRadius: "12px",
-    fontSize: "1.1rem",
-    backgroundColor: "#7A4FFF",
-    color: "#fff",
-    border: "none",
-    cursor: "pointer",
-    boxShadow: darkMode
-      ? "0 4px 10px rgba(0, 0, 0, 0.3)"
-      : "0 4px 10px rgba(0, 0, 0, 0.15)",
-    transition: "transform 0.2s, background 0.3s",
-  };
-
   return (
     <div style={containerStyle}>
-      <h1 style={titleStyle}>✨ Bine ai venit în lumea culorilor!</h1>
+      <h1 style={titleStyle}>✨ Welcome to the World of Colors!</h1>
       <p style={descriptionStyle}>
-        Creează, explorează și salvează palete de culori care te inspiră. Poți
-        genera aleatoriu, extrage din imagini sau reveni la colecția ta
-        preferată de nuanțe.
+        Create, explore, and save color palettes that inspire you. Generate
+        random palettes, extract colors from images, or revisit your favorite
+        collection of colors.
       </p>
 
       <div style={buttonContainerStyle}>
-        <Link to="/din-imagine" style={linkStyle}>
-          <button style={buttonStyle}>🎞️ Extrage din imagine</button>
+        <Link to="/from-image" style={linkStyle}>
+          <button className="home-button">🎞️ Extract from Image</button>
         </Link>
-        <Link to="/salvate" style={linkStyle}>
-          <button style={buttonStyle}>📁 Paletele mele</button>
+        <Link to="/saved" style={linkStyle}>
+          <button className="home-button">📁 My Palettes</button>
         </Link>
-        <Link to="/genereaza" style={linkStyle}>
-          <button style={buttonStyle}>🎨 Generează aleatoriu</button>
+        <Link to="/generate" style={linkStyle}>
+          <button className="home-button">🎨 Generate Random</button>
         </Link>
       </div>
     </div>

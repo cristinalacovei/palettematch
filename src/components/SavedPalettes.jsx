@@ -20,9 +20,9 @@ function SavedPalettes() {
 
   return (
     <div className="palette-container">
-      <h2>Paletele mele salvate 🎨</h2>
+      <h2>My Saved Palettes 🎨</h2>
       {savedPalettes.length === 0 ? (
-        <p>Nu ai salvat încă nicio paletă.</p>
+        <p>No saved palettes yet. Create your first palette!</p>
       ) : (
         savedPalettes.map((palette, index) => (
           <div key={index} style={{ marginBottom: "20px" }}>
@@ -40,7 +40,7 @@ function SavedPalettes() {
                 cursor: "pointer",
               }}
             >
-              🗑️ Șterge paleta
+              🗑️ Delete Palette
             </button>
           </div>
         ))

@@ -64,14 +64,14 @@ function ImagePalette({ onExtract }) {
 
   return (
     <div className="palette-box">
-      <h2 className="palette-title">🎨 Extractor de Paletă de Culori</h2>
+      <h2 className="palette-title">🎨 Color Palette Extractor</h2>
       <p className="palette-description">
-        Încarcă o imagine, extrage automat cele mai dominante culori și salvează
-        paleta ta preferată.
+        Upload an image and automatically extract the most dominant colors. Save
+        your favorite palette.
       </p>
 
       <label htmlFor="image-upload" className="palette-upload-label">
-        📁 Încarcă imagine
+        📁 Upload Image
       </label>
       <input
         id="image-upload"
@@ -84,7 +84,7 @@ function ImagePalette({ onExtract }) {
       {imageUrl && (
         <>
           <img src={imageUrl} alt="Uploaded" className="palette-image" />
-          <h4 style={{ marginTop: "30px" }}>Culori extrase:</h4>
+          <h4 style={{ marginTop: "30px" }}>Extracted Colors:</h4>
           <div className="palette-grid">
             {palette.map((color, i) => (
               <div key={i} style={{ textAlign: "center" }}>
@@ -100,7 +100,7 @@ function ImagePalette({ onExtract }) {
           <div style={{ marginTop: "30px" }}>
             <input
               type="text"
-              placeholder="Nume paletă"
+              placeholder="Palette name"
               value={paletteName}
               onChange={(e) => setPaletteName(e.target.value)}
               className="palette-input"
@@ -110,13 +110,13 @@ function ImagePalette({ onExtract }) {
               disabled={!paletteName.trim()}
               className="palette-save-btn"
             >
-              💾 Salvează paleta
+              💾 Save Palette
             </button>
           </div>
 
           {showSuccess && (
             <div className="palette-success">
-              ✅ Paleta a fost salvată cu succes!
+              ✅ Palette saved successfully!
             </div>
           )}
         </>

@@ -6,7 +6,7 @@ import ImagePalette from "./components/ImagePalette";
 import HomePage from "./components/HomePage";
 import AppHeader from "./components/AppHeader";
 import AccessibilityChecker from "./features/accessibility/AccessibilityChecker";
-import PaletteUIPreview from "./components/PaletteUIPreview";
+import PaletteUIPreview from "./features/preview/PaletteUIPreview";
 import "./App.css";
 
 function App() {

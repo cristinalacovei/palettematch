@@ -9,7 +9,7 @@ import {
   getContrastResults,
   getContrastStatus,
   getImportedPalette,
-} from "../../domain/palette/accesibilityEngine";
+} from "../../domain/accessibility/accessibilityEngine";
 import ColorPairControls from "./ColorPairControls";
 import ImportedPaletteSelector from "./ImportedPaletteSelector";
 import ContrastSummary from "./ContrastSummary";

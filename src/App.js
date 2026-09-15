@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import PaletteGenerator from "./features/generator/PaletteGenerator";
-import SavedPalettes from "./components/SavedPalettes";
+import SavedPalettes from "./features/library/SavedPalettes";
 import ImagePalette from "./components/ImagePalette";
 import HomePage from "./components/HomePage";
 import AppHeader from "./components/AppHeader";

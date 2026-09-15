@@ -8,7 +8,7 @@ import {
 } from "../../domain/palette/paletteConstants";
 import { createPalette } from "../../domain/palette/paletteGenerator";
 import { addPalette } from "../../services/paletteStorage";
-import ColorEditor from "../../components/ColorEditor.jsx";
+import ColorEditor from "./ColorEditor.jsx";
 import GeneratorControls from "./GeneratorControls";
 import PalettePreview from "./PalettePreview";
 import PaletteToolbar from "./PaletteToolbar";

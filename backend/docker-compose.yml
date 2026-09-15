@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: palettematch-postgres
+    environment:
+      POSTGRES_DB: palettematch
+      POSTGRES_USER: palettematch
+      POSTGRES_PASSWORD: palettematch
+    ports:
+      - "5434:5432"
+    volumes:
+      - palettematch-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U palettematch -d palettematch"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  palettematch-postgres-data:

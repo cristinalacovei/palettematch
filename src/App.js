@@ -5,7 +5,7 @@ import SavedPalettes from "./features/library/SavedPalettes";
 import ImagePalette from "./components/ImagePalette";
 import HomePage from "./components/HomePage";
 import AppHeader from "./components/AppHeader";
-import AccessibilityChecker from "./components/AccessibilityChecker";
+import AccessibilityChecker from "./features/accessibility/AccessibilityChecker";
 import PaletteUIPreview from "./components/PaletteUIPreview";
 import "./App.css";
 

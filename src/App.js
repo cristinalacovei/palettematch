@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import PaletteGenerator from "./features/generator/PaletteGenerator";
 import SavedPalettes from "./features/library/SavedPalettes";
-import ImagePalette from "./components/ImagePalette";
+import ImagePalette from "./features/image-extraction/ImagePalette";
 import HomePage from "./components/HomePage";
 import AppHeader from "./components/AppHeader";
 import AccessibilityChecker from "./features/accessibility/AccessibilityChecker";

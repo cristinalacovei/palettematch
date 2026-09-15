@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Check, FolderHeart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import ExportPalette from "../../components/ExportPalette.jsx";
+import ExportPalette from "../export/ExportPalette";
 import { generateId } from "../../utils/idUtils";
 import {
   loadPalettes,

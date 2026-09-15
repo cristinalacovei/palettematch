@@ -12,7 +12,7 @@ import {
   getContrastResults,
   getContrastStatus,
   getImportedPalette,
-} from "../domain/accessibility/accessibilityEngine";
+} from "../domain/palette/accesibilityEngine";
 
 import "./AccessibilityChecker.css";
 

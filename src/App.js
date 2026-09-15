@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import PaletteGenerator from "./components/PaletteGenerator";
+import PaletteGenerator from "./features/generator/PaletteGenerator";
 import SavedPalettes from "./components/SavedPalettes";
 import ImagePalette from "./components/ImagePalette";
 import HomePage from "./components/HomePage";

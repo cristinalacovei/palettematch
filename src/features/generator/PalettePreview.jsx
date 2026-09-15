@@ -1,6 +1,5 @@
 import React from "react";
-import ColorBox from "./ColorBox";
-import "./PaletteGenerator.css";
+import ColorBox from "../../components/ColorBox";
 
 function PalettePreview({
   colors,

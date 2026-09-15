@@ -8,25 +8,11 @@ import {
   Save,
   Upload,
 } from "lucide-react";
+
+import { rgbToHex } from "../utils/colorUtils";
+import { addPalette } from "../services/paletteStorage";
+
 import "./ImagePalette.css";
-
-function rgbToHex(r, g, b) {
-  return (
-    "#" +
-    [r, g, b]
-      .map((value) => value.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase()
-  );
-}
-
-function generateId() {
-  if (crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-
-  return String(Date.now());
-}
 
 function ImagePalette({ onExtract }) {
   const imageRef = useRef(null);
@@ -73,6 +59,7 @@ function ImagePalette({ onExtract }) {
       console.error("Could not extract colors:", extractionError);
 
       setPalette([]);
+
       setError(
         "We could not extract colors from this image. Try another file.",
       );
@@ -86,6 +73,7 @@ function ImagePalette({ onExtract }) {
 
     if (!file.type.startsWith("image/")) {
       setError("Please choose a valid image file.");
+
       return;
     }
 
@@ -93,6 +81,7 @@ function ImagePalette({ onExtract }) {
 
     if (file.size > maximumFileSize) {
       setError("The image must be smaller than 10 MB.");
+
       return;
     }
 
@@ -105,6 +94,7 @@ function ImagePalette({ onExtract }) {
         imageRef.current = image;
 
         setImageUrl(event.target.result);
+
         setPaletteName("");
         setError("");
 
@@ -127,6 +117,7 @@ function ImagePalette({ onExtract }) {
 
   const handleImageUpload = (event) => {
     const file = event.target.files?.[0];
+
     loadImage(file);
 
     event.target.value = "";
@@ -134,9 +125,11 @@ function ImagePalette({ onExtract }) {
 
   const handleDrop = (event) => {
     event.preventDefault();
+
     setIsDragging(false);
 
     const file = event.dataTransfer.files?.[0];
+
     loadImage(file);
   };
 
@@ -165,40 +158,35 @@ function ImagePalette({ onExtract }) {
   };
 
   const savePalette = () => {
-    if (!paletteName.trim()) {
+    const trimmedName = paletteName.trim();
+
+    if (!trimmedName) {
       setError("Give the palette a name before saving it.");
+
       return;
     }
 
     if (palette.length === 0) {
       setError("Extract a palette before saving it.");
+
       return;
     }
 
-    let savedPalettes = [];
-
-    try {
-      savedPalettes = JSON.parse(localStorage.getItem("palettes") || "[]");
-    } catch {
-      savedPalettes = [];
-    }
-
-    const newPalette = {
-      id: generateId(),
-      name: paletteName.trim(),
+    const savedPalette = addPalette({
+      name: trimmedName,
       colors: palette,
       source: "image",
-      favorite: false,
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    localStorage.setItem(
-      "palettes",
-      JSON.stringify([...savedPalettes, newPalette]),
-    );
+    if (!savedPalette) {
+      setError("The palette could not be saved.");
+
+      return;
+    }
 
     setPaletteName("");
     setError("");
+
     showNotice("Palette saved to your library");
   };
 
@@ -217,7 +205,7 @@ function ImagePalette({ onExtract }) {
         </div>
 
         <div className="extract-heading__badge">
-          <ImagePlus size={16} />
+          <ImagePlus size={16} aria-hidden="true" />
           Processed locally
         </div>
       </div>
@@ -226,6 +214,7 @@ function ImagePalette({ onExtract }) {
         <div className="extract-controls">
           <div className="extract-controls__header">
             <span>Source image</span>
+
             <span>01</span>
           </div>
 
@@ -236,17 +225,19 @@ function ImagePalette({ onExtract }) {
             htmlFor="image-upload"
             onDragEnter={(event) => {
               event.preventDefault();
+
               setIsDragging(true);
             }}
             onDragOver={(event) => {
               event.preventDefault();
+
               setIsDragging(true);
             }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
           >
             <span className="upload-zone__icon">
-              <Upload size={22} />
+              <Upload size={22} aria-hidden="true" />
             </span>
 
             <strong>Choose an image</strong>
@@ -275,12 +266,15 @@ function ImagePalette({ onExtract }) {
                 onChange={handleColorCountChange}
               >
                 <option value={3}>3 colors</option>
+
                 <option value={5}>5 colors</option>
+
                 <option value={7}>7 colors</option>
+
                 <option value={10}>10 colors</option>
               </select>
 
-              <ChevronDown size={16} />
+              <ChevronDown size={16} aria-hidden="true" />
             </div>
 
             <p>You can change this after uploading the image.</p>
@@ -297,7 +291,7 @@ function ImagePalette({ onExtract }) {
           {!imageUrl ? (
             <div className="extract-empty">
               <span className="extract-empty__icon">
-                <ImagePlus size={28} />
+                <ImagePlus size={28} aria-hidden="true" />
               </span>
 
               <h2>Your extracted palette will appear here</h2>
@@ -305,7 +299,7 @@ function ImagePalette({ onExtract }) {
               <p>Choose an image to see its dominant colors.</p>
 
               <button type="button" onClick={() => inputRef.current?.click()}>
-                <Upload size={17} />
+                <Upload size={17} aria-hidden="true" />
                 Upload image
               </button>
             </div>
@@ -318,6 +312,7 @@ function ImagePalette({ onExtract }) {
               <div className="extracted-palette-header">
                 <div>
                   <span>Extracted palette</span>
+
                   <strong>{palette.length} colors found</strong>
                 </div>
 
@@ -326,7 +321,9 @@ function ImagePalette({ onExtract }) {
 
               <div
                 className="extracted-colors"
-                style={{ "--extracted-count": palette.length }}
+                style={{
+                  "--extracted-count": palette.length,
+                }}
               >
                 {palette.map((color, index) => (
                   <button
@@ -338,13 +335,15 @@ function ImagePalette({ onExtract }) {
                   >
                     <span
                       className="extracted-color__tone"
-                      style={{ backgroundColor: color }}
+                      style={{
+                        backgroundColor: color,
+                      }}
                     >
                       <span className="extracted-color__copy">
                         {copiedColor === color ? (
-                          <Check size={15} />
+                          <Check size={15} aria-hidden="true" />
                         ) : (
-                          <Copy size={15} />
+                          <Copy size={15} aria-hidden="true" />
                         )}
 
                         {copiedColor === color ? "Copied" : "Copy"}
@@ -384,7 +383,7 @@ function ImagePalette({ onExtract }) {
                   />
 
                   <button type="button" onClick={savePalette}>
-                    <Save size={16} />
+                    <Save size={16} aria-hidden="true" />
                     Save palette
                   </button>
                 </div>
@@ -399,7 +398,8 @@ function ImagePalette({ onExtract }) {
         role="status"
         aria-live="polite"
       >
-        <Check size={16} />
+        <Check size={16} aria-hidden="true" />
+
         {notice}
       </div>
     </main>

@@ -15,9 +15,11 @@ import {
   Users,
   Save,
 } from "lucide-react";
-import "./PaletteUIPreview.css";
+import { HEX_PATTERN, normalizeColor } from "../utils/colorUtils";
 
-const HEX_PATTERN = /^#[0-9A-F]{6}$/i;
+import { savePaletteDesignSystem } from "../services/paletteStorage";
+
+import "./PaletteUIPreview.css";
 
 const ROLE_OPTIONS = [
   {
@@ -46,10 +48,6 @@ const ROLE_OPTIONS = [
     description: "Highlights and secondary details",
   },
 ];
-
-function normalizeColor(color) {
-  return chroma(color).hex().toUpperCase();
-}
 
 function getImportedPalette(routeState) {
   const receivedPalette = routeState?.palette;
@@ -305,47 +303,18 @@ function PaletteUIPreview() {
       return;
     }
 
-    try {
-      const savedPalettes = JSON.parse(
-        localStorage.getItem("palettes") || "[]",
-      );
+    const updatedPalette = savePaletteDesignSystem(importedPalette.id, roles);
 
-      if (!Array.isArray(savedPalettes)) {
-        setSaveStatus("error");
-        return;
-      }
-
-      const paletteExists = savedPalettes.some(
-        (palette) => palette.id === importedPalette.id,
-      );
-
-      if (!paletteExists) {
-        setSaveStatus("error");
-        return;
-      }
-
-      const updatedPalettes = savedPalettes.map((palette) =>
-        palette.id === importedPalette.id
-          ? {
-              ...palette,
-              designSystem: {
-                ...roles,
-                updatedAt: new Date().toISOString(),
-              },
-            }
-          : palette,
-      );
-
-      localStorage.setItem("palettes", JSON.stringify(updatedPalettes));
-
-      setSaveStatus("saved");
-
-      window.setTimeout(() => {
-        setSaveStatus("");
-      }, 2000);
-    } catch {
+    if (!updatedPalette) {
       setSaveStatus("error");
+      return;
     }
+
+    setSaveStatus("saved");
+
+    window.setTimeout(() => {
+      setSaveStatus("");
+    }, 2000);
   };
 
   const previewStyles = {

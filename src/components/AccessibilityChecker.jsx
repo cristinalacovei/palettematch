@@ -1,104 +1,20 @@
 import React, { useMemo, useState } from "react";
+
 import { useLocation } from "react-router-dom";
-import chroma from "chroma-js";
+
 import { ArrowLeftRight, Check, ShieldCheck, X } from "lucide-react";
+
+import { HEX_PATTERN, normalizeHex } from "../utils/colorUtils";
+
+import {
+  calculateContrastRatio,
+  findBestContrastPair,
+  getContrastResults,
+  getContrastStatus,
+  getImportedPalette,
+} from "../domain/accessibility/accessibilityEngine";
+
 import "./AccessibilityChecker.css";
-
-const HEX_PATTERN = /^#[0-9A-F]{6}$/i;
-
-const DEFAULT_FOREGROUND = "#17181C";
-const DEFAULT_BACKGROUND = "#FFFFFF";
-
-function normalizeHex(value) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return "";
-  }
-
-  const valueWithHash = trimmedValue.startsWith("#")
-    ? trimmedValue
-    : `#${trimmedValue}`;
-
-  return valueWithHash.toUpperCase();
-}
-
-function getImportedPalette(routeState) {
-  const receivedPalette = routeState?.palette;
-
-  if (!receivedPalette || !Array.isArray(receivedPalette.colors)) {
-    return null;
-  }
-
-  const validColors = receivedPalette.colors
-    .filter((color) => {
-      if (typeof color !== "string") {
-        return false;
-      }
-
-      return HEX_PATTERN.test(normalizeHex(color));
-    })
-    .map((color) => normalizeHex(color));
-
-  const uniqueColors = [...new Set(validColors)];
-
-  if (uniqueColors.length === 0) {
-    return null;
-  }
-
-  return {
-    name: receivedPalette.name || "Imported palette",
-    colors: uniqueColors,
-  };
-}
-
-function findBestContrastPair(colors) {
-  if (!colors || colors.length < 2) {
-    return {
-      foreground: DEFAULT_FOREGROUND,
-      background: DEFAULT_BACKGROUND,
-    };
-  }
-
-  let bestFirstColor = colors[0];
-  let bestSecondColor = colors[1];
-  let bestRatio = chroma.contrast(colors[0], colors[1]);
-
-  for (let firstIndex = 0; firstIndex < colors.length; firstIndex += 1) {
-    for (
-      let secondIndex = firstIndex + 1;
-      secondIndex < colors.length;
-      secondIndex += 1
-    ) {
-      const currentRatio = chroma.contrast(
-        colors[firstIndex],
-        colors[secondIndex],
-      );
-
-      if (currentRatio > bestRatio) {
-        bestRatio = currentRatio;
-        bestFirstColor = colors[firstIndex];
-        bestSecondColor = colors[secondIndex];
-      }
-    }
-  }
-
-  const firstLuminance = chroma(bestFirstColor).luminance();
-
-  const secondLuminance = chroma(bestSecondColor).luminance();
-
-  if (firstLuminance <= secondLuminance) {
-    return {
-      foreground: bestFirstColor,
-      background: bestSecondColor,
-    };
-  }
-
-  return {
-    foreground: bestSecondColor,
-    background: bestFirstColor,
-  };
-}
 
 function AccessibilityChecker() {
   const location = useLocation();
@@ -128,7 +44,7 @@ function AccessibilityChecker() {
   const [activePaletteRole, setActivePaletteRole] = useState("foreground");
 
   const contrastRatio = useMemo(
-    () => chroma.contrast(foreground, background),
+    () => calculateContrastRatio(foreground, background),
     [foreground, background],
   );
 
@@ -138,79 +54,17 @@ function AccessibilityChecker() {
 
   const backgroundHasError = !HEX_PATTERN.test(backgroundInput);
 
-  const results = [
-    {
-      title: "Normal text",
-      description: "Regular text smaller than 18pt",
-      standard: "WCAG AA",
-      threshold: "4.5:1",
-      passed: contrastRatio >= 4.5,
-    },
-    {
-      title: "Normal text",
-      description: "Regular text smaller than 18pt",
-      standard: "WCAG AAA",
-      threshold: "7:1",
-      passed: contrastRatio >= 7,
-    },
-    {
-      title: "Large text",
-      description: "18pt or 14pt bold and larger",
-      standard: "WCAG AA",
-      threshold: "3:1",
-      passed: contrastRatio >= 3,
-    },
-    {
-      title: "Large text",
-      description: "18pt or 14pt bold and larger",
-      standard: "WCAG AAA",
-      threshold: "4.5:1",
-      passed: contrastRatio >= 4.5,
-    },
-    {
-      title: "UI components",
-      description: "Icons, borders and interface controls",
-      standard: "WCAG AA",
-      threshold: "3:1",
-      passed: contrastRatio >= 3,
-    },
-  ];
+  const results = useMemo(
+    () => getContrastResults(contrastRatio),
+    [contrastRatio],
+  );
 
   const passedChecks = results.filter((result) => result.passed).length;
 
-  const getContrastStatus = () => {
-    if (contrastRatio >= 7) {
-      return {
-        label: "Excellent contrast",
-        message: "This combination passes every contrast check.",
-        tone: "excellent",
-      };
-    }
-
-    if (contrastRatio >= 4.5) {
-      return {
-        label: "Good contrast",
-        message: "Suitable for normal and large text at WCAG AA.",
-        tone: "good",
-      };
-    }
-
-    if (contrastRatio >= 3) {
-      return {
-        label: "Limited contrast",
-        message: "Use this combination only for large text or UI elements.",
-        tone: "limited",
-      };
-    }
-
-    return {
-      label: "Insufficient contrast",
-      message: "Increase the difference between these two colors.",
-      tone: "poor",
-    };
-  };
-
-  const contrastStatus = getContrastStatus();
+  const contrastStatus = useMemo(
+    () => getContrastStatus(contrastRatio),
+    [contrastRatio],
+  );
 
   const handleTextColorChange = (type, value) => {
     const normalizedValue = normalizeHex(value);
@@ -237,11 +91,14 @@ function AccessibilityChecker() {
 
     if (type === "foreground") {
       setForeground(normalizedValue);
+
       setForegroundInput(normalizedValue);
+
       return;
     }
 
     setBackground(normalizedValue);
+
     setBackgroundInput(normalizedValue);
   };
 
@@ -257,20 +114,25 @@ function AccessibilityChecker() {
 
   const handleSwapColors = () => {
     setForeground(background);
+
     setForegroundInput(background);
 
     setBackground(foreground);
+
     setBackgroundInput(foreground);
   };
 
   const applyImportedColor = (color) => {
     if (activePaletteRole === "foreground") {
       setForeground(color);
+
       setForegroundInput(color);
+
       return;
     }
 
     setBackground(color);
+
     setBackgroundInput(color);
   };
 
@@ -300,6 +162,7 @@ function AccessibilityChecker() {
         <aside className="accessibility-controls">
           <div className="accessibility-section-heading">
             <span>Colors</span>
+
             <strong>01</strong>
           </div>
 
@@ -490,8 +353,12 @@ function AccessibilityChecker() {
 
           <div className="accessibility-ratio" aria-live="polite">
             <span>Contrast ratio</span>
+
             <strong>{roundedRatio}:1</strong>
-            <small>{passedChecks} of 5 checks passed</small>
+
+            <small>
+              {passedChecks} of {results.length} checks passed
+            </small>
           </div>
 
           <div
@@ -507,11 +374,13 @@ function AccessibilityChecker() {
           <div className="accessibility-preview-heading">
             <div>
               <span>Live preview</span>
+
               <h2>See the combination in context</h2>
             </div>
 
             <div className="accessibility-preview-heading__colors">
               <span>{foreground}</span>
+
               <span>{background}</span>
             </div>
           </div>
@@ -520,6 +389,7 @@ function AccessibilityChecker() {
             className="accessibility-preview"
             style={{
               color: foreground,
+
               backgroundColor: background,
             }}
           >
@@ -538,7 +408,9 @@ function AccessibilityChecker() {
               type="button"
               style={{
                 color: background,
+
                 backgroundColor: foreground,
+
                 borderColor: foreground,
               }}
             >
@@ -555,6 +427,7 @@ function AccessibilityChecker() {
             <div className="accessibility-checks__heading">
               <div>
                 <span>WCAG results</span>
+
                 <h2>Contrast requirements</h2>
               </div>
 

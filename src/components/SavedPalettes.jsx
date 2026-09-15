@@ -6,54 +6,26 @@ import {
   FolderHeart,
   Heart,
   Image,
+  LayoutDashboard,
   Palette,
   Pencil,
   Search,
   ShieldCheck,
   Trash2,
-  LayoutDashboard,
   X,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+
 import ExportPalette from "./ExportPalette.jsx";
+
+import { generateId } from "../utils/idUtils";
+
+import {
+  loadPalettes,
+  savePalettes as savePalettesToStorage,
+} from "../services/paletteStorage";
+
 import "./SavedPalettes.css";
-
-function generateId() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function loadPalettes() {
-  try {
-    const storedPalettes = JSON.parse(localStorage.getItem("palettes") || "[]");
-
-    if (!Array.isArray(storedPalettes)) {
-      return [];
-    }
-
-    const normalizedPalettes = storedPalettes.map((palette, index) => ({
-      id: palette.id || `legacy-${Date.now()}-${index}`,
-      name: palette.name || `Untitled palette ${index + 1}`,
-      colors: Array.isArray(palette.colors) ? palette.colors : [],
-      source: palette.source || "generator",
-      favorite: Boolean(palette.favorite),
-      designSystem:
-        palette.designSystem && typeof palette.designSystem === "object"
-          ? palette.designSystem
-          : null,
-      createdAt: palette.createdAt || new Date(0).toISOString(),
-    }));
-
-    localStorage.setItem("palettes", JSON.stringify(normalizedPalettes));
-
-    return normalizedPalettes;
-  } catch {
-    return [];
-  }
-}
 
 function formatDate(dateValue) {
   const date = new Date(dateValue);
@@ -88,10 +60,18 @@ function SavedPalettes() {
 
   const [notice, setNotice] = useState("");
 
-  const savePalettes = (updatedPalettes) => {
+  const persistPalettes = (updatedPalettes) => {
+    const saved = savePalettesToStorage(updatedPalettes);
+
+    if (!saved) {
+      showNotice("The library could not be updated");
+
+      return false;
+    }
+
     setPalettes(updatedPalettes);
 
-    localStorage.setItem("palettes", JSON.stringify(updatedPalettes));
+    return true;
   };
 
   const showNotice = (message) => {
@@ -112,7 +92,7 @@ function SavedPalettes() {
         : palette,
     );
 
-    savePalettes(updatedPalettes);
+    persistPalettes(updatedPalettes);
   };
 
   const startRenaming = (palette) => {
@@ -141,21 +121,43 @@ function SavedPalettes() {
         : palette,
     );
 
-    savePalettes(updatedPalettes);
+    const saved = persistPalettes(updatedPalettes);
+
+    if (!saved) {
+      return;
+    }
+
     cancelRenaming();
+
     showNotice("Palette renamed");
   };
 
   const duplicatePalette = (palette) => {
     const duplicatedPalette = {
       ...palette,
+
       id: generateId(),
+
       name: `${palette.name} copy`,
+
+      colors: [...palette.colors],
+
       favorite: false,
+
+      designSystem: palette.designSystem
+        ? {
+            ...palette.designSystem,
+          }
+        : null,
+
       createdAt: new Date().toISOString(),
     };
 
-    savePalettes([duplicatedPalette, ...palettes]);
+    const saved = persistPalettes([duplicatedPalette, ...palettes]);
+
+    if (!saved) {
+      return;
+    }
 
     showNotice("Palette duplicated");
   };
@@ -173,7 +175,12 @@ function SavedPalettes() {
 
     const updatedPalettes = palettes.filter((item) => item.id !== paletteId);
 
-    savePalettes(updatedPalettes);
+    const saved = persistPalettes(updatedPalettes);
+
+    if (!saved) {
+      return;
+    }
+
     showNotice("Palette deleted");
   };
 
@@ -182,6 +189,7 @@ function SavedPalettes() {
       await navigator.clipboard.writeText(color);
 
       setCopiedValue(color);
+
       showNotice(`${color} copied`);
 
       window.setTimeout(() => {
@@ -199,6 +207,7 @@ function SavedPalettes() {
       await navigator.clipboard.writeText(paletteValue);
 
       setCopiedValue(palette.id);
+
       showNotice("Palette values copied");
 
       window.setTimeout(() => {
@@ -482,6 +491,7 @@ function SavedPalettes() {
 
                             <span>
                               {formatDate(palette.createdAt)}
+
                               {palette.designSystem && (
                                 <>
                                   <span aria-hidden="true">·</span>
@@ -537,6 +547,7 @@ function SavedPalettes() {
                       <Download size={16} aria-hidden="true" />
                       Export
                     </button>
+
                     <button
                       type="button"
                       onClick={() => sendToPreview(palette)}
@@ -590,6 +601,7 @@ function SavedPalettes() {
           aria-live="polite"
         >
           <Check size={16} aria-hidden="true" />
+
           {notice}
         </div>
       </main>

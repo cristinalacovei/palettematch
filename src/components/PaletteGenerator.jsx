@@ -1,5 +1,4 @@
 import React, { useRef, useState } from "react";
-import chroma from "chroma-js";
 import {
   Check,
   ChevronDown,
@@ -10,184 +9,28 @@ import {
   Unlock,
 } from "lucide-react";
 import { ChromePicker } from "react-color";
+
 import PalettePreview from "./PalettePreview";
 import ColorEditor from "./ColorEditor.jsx";
+
+import {
+  DEFAULT_BASE_COLOR,
+  DEFAULT_PALETTE_TYPE,
+  PALETTE_DESCRIPTIONS,
+  PALETTE_TYPES,
+} from "../domain/palette/paletteConstants";
+
+import { createPalette } from "../domain/palette/paletteGenerator";
+import { addPalette } from "../services/paletteStorage";
+
 import "./PaletteGenerator.css";
 
-const PALETTE_TYPES = [
-  {
-    value: "analog",
-    label: "Analog",
-  },
-  {
-    value: "complement",
-    label: "Complementary",
-  },
-  {
-    value: "triad",
-    label: "Triadic",
-  },
-  {
-    value: "tetradic",
-    label: "Tetradic",
-  },
-  {
-    value: "monochrome",
-    label: "Monochromatic",
-  },
-  {
-    value: "split-complement",
-    label: "Split complementary",
-  },
-];
-
-const PALETTE_DESCRIPTIONS = {
-  analog: "Neighboring hues create a calm, naturally cohesive palette.",
-
-  complement: "Opposing hues create contrast and a clear visual hierarchy.",
-
-  triad: "Three evenly spaced hues feel balanced, colorful and energetic.",
-
-  tetradic: "Two complementary pairs offer a broad, expressive color range.",
-
-  monochrome: "One hue in varied lightness levels keeps the system focused.",
-
-  "split-complement":
-    "A base hue and two nearby opposites balance energy with control.",
-};
-
-function clamp(value, minimum, maximum) {
-  return Math.min(Math.max(value, minimum), maximum);
-}
-
-function normalizeColors(colors) {
-  return colors.map((color) => chroma(color).hex().toUpperCase());
-}
-
-function varyColor(color) {
-  const [rawHue, rawSaturation, rawLightness] = chroma(color).hsl();
-
-  const hue = Number.isFinite(rawHue) ? rawHue + (Math.random() - 0.5) * 8 : 0;
-
-  const saturation =
-    rawSaturation < 0.03
-      ? 0
-      : clamp(rawSaturation * (0.88 + Math.random() * 0.24), 0.05, 1);
-
-  const lightness = clamp(
-    rawLightness + (Math.random() - 0.5) * 0.12,
-    0.08,
-    0.92,
-  );
-
-  return chroma.hsl(hue, saturation, lightness).hex().toUpperCase();
-}
-
-function addVariations(colors, baseColor) {
-  const normalizedBaseColor = chroma(baseColor).hex().toUpperCase();
-
-  return colors.map((color) => {
-    const normalizedColor = chroma(color).hex().toUpperCase();
-
-    if (normalizedColor === normalizedBaseColor) {
-      return normalizedColor;
-    }
-
-    return varyColor(normalizedColor);
-  });
-}
-
-function createPalette(baseColor, type, shouldAddVariations = false) {
-  const base = chroma(baseColor);
-  const hueValue = base.get("hsl.h");
-  const hue = Number.isFinite(hueValue) ? hueValue : 0;
-
-  let generatedColors = [];
-
-  switch (type) {
-    case "analog":
-      generatedColors = [-40, -20, 0, 20, 40].map((offset) =>
-        base.set("hsl.h", hue + offset),
-      );
-      break;
-
-    case "complement": {
-      const oppositeColor = base.set("hsl.h", (hue + 180) % 360);
-
-      generatedColors = [
-        base.brighten(1.15),
-        base,
-        chroma.mix(base, oppositeColor, 0.5, "lab"),
-        oppositeColor,
-        oppositeColor.darken(1.1),
-      ];
-
-      break;
-    }
-
-    case "triad":
-      generatedColors = [
-        base.brighten(0.8),
-        base,
-        base.set("hsl.h", (hue + 120) % 360),
-        base.set("hsl.h", (hue + 240) % 360),
-        base.set("hsl.h", (hue + 240) % 360).darken(0.9),
-      ];
-      break;
-
-    case "tetradic":
-      generatedColors = [
-        base,
-        base.set("hsl.h", (hue + 90) % 360),
-        base.set("hsl.h", (hue + 180) % 360),
-        base.set("hsl.h", (hue + 270) % 360),
-      ];
-      break;
-
-    case "monochrome":
-      generatedColors = chroma
-        .scale([base.brighten(2.2), base, base.darken(2.2)])
-        .mode("lab")
-        .colors(5);
-      break;
-
-    case "split-complement":
-      generatedColors = [
-        base.brighten(0.8),
-        base,
-        base.set("hsl.h", (hue + 150) % 360),
-        base.set("hsl.h", (hue + 210) % 360),
-        base.set("hsl.h", (hue + 210) % 360).darken(0.9),
-      ];
-      break;
-
-    default:
-      generatedColors = [base];
-  }
-
-  const normalizedColors = normalizeColors(generatedColors);
-
-  if (shouldAddVariations) {
-    return addVariations(normalizedColors, baseColor);
-  }
-
-  return normalizedColors;
-}
-
-function generateId() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
 function PaletteGenerator() {
-  const initialColors = createPalette("#5B5CE2", "analog");
+  const initialColors = createPalette(DEFAULT_BASE_COLOR, DEFAULT_PALETTE_TYPE);
 
-  const [baseColor, setBaseColor] = useState("#5B5CE2");
+  const [baseColor, setBaseColor] = useState(DEFAULT_BASE_COLOR);
 
-  const [type, setType] = useState("analog");
+  const [type, setType] = useState(DEFAULT_PALETTE_TYPE);
 
   const [colors, setColors] = useState(initialColors);
 
@@ -266,7 +109,6 @@ function PaletteGenerator() {
 
     if (allColorsAreLocked) {
       showNotice("Unlock at least one color to regenerate");
-
       return;
     }
 
@@ -284,6 +126,7 @@ function PaletteGenerator() {
 
     setColors(mergedColors);
     setLockedColors(updatedLocks);
+
     closeColorEditor();
 
     if (lockedCount > 0) {
@@ -298,32 +141,23 @@ function PaletteGenerator() {
   };
 
   const saveCurrentPalette = () => {
-    if (!paletteName.trim()) {
+    const trimmedName = paletteName.trim();
+
+    if (!trimmedName) {
       saveInputRef.current?.focus();
       return;
     }
 
-    let savedPalettes = [];
-
-    try {
-      savedPalettes = JSON.parse(localStorage.getItem("palettes") || "[]");
-    } catch {
-      savedPalettes = [];
-    }
-
-    const newPalette = {
-      id: generateId(),
-      name: paletteName.trim(),
+    const savedPalette = addPalette({
+      name: trimmedName,
       colors,
       source: "generator",
-      favorite: false,
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    localStorage.setItem(
-      "palettes",
-      JSON.stringify([...savedPalettes, newPalette]),
-    );
+    if (!savedPalette) {
+      showNotice("The palette could not be saved");
+      return;
+    }
 
     setPaletteName("");
 
@@ -519,6 +353,7 @@ function PaletteGenerator() {
           aria-live="polite"
         >
           <Check size={16} aria-hidden="true" />
+
           {notice}
         </div>
       </main>

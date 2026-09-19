@@ -38,3 +38,9 @@ http://localhost:8080/api/health
 The default database and CORS settings can be overridden with `DB_URL`,
 `DB_USERNAME`, `DB_PASSWORD`, `SERVER_PORT`, and
 `APP_CORS_ALLOWED_ORIGINS`.
+
+## Persistence model
+
+The initial persistence model contains users, palettes, ordered palette colors,
+and optional palette design systems. Schema changes are managed by Flyway;
+Hibernate is configured only to validate the schema.

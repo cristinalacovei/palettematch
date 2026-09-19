@@ -83,6 +83,11 @@ public class Palette {
         }
     }
 
+    public void updateDetails(String name, boolean favorite) {
+        this.name = name;
+        this.favorite = favorite;
+    }
+
     public void setDesignSystem(PaletteDesignSystem designSystem) {
         this.designSystem = designSystem;
         if (designSystem != null && designSystem.getPalette() != this) {

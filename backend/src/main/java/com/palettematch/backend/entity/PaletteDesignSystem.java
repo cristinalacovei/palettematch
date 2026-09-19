@@ -67,6 +67,19 @@ public class PaletteDesignSystem {
         this.palette = palette;
     }
 
+    public void updateColors(
+            String background,
+            String surface,
+            String textColor,
+            String primaryColor,
+            String accentColor) {
+        this.background = background;
+        this.surface = surface;
+        this.textColor = textColor;
+        this.primaryColor = primaryColor;
+        this.accentColor = accentColor;
+    }
+
     @PrePersist
     @PreUpdate
     void updateTimestamp() {

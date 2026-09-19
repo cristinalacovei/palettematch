@@ -50,6 +50,11 @@ The protected current-user endpoint is:
 http://localhost:8080/api/users/me
 ```
 
+Authenticated palette endpoints are available under `/api/palettes`:
+`GET`, `POST`, `GET /{paletteId}`, `PUT /{paletteId}`,
+`PUT /{paletteId}/design-system`, and `DELETE /{paletteId}`. Palette ownership
+is always derived from the authenticated JWT; clients never send a `userId`.
+
 The backend validates JWTs using the issuer
 `http://localhost:8180/realms/palettematch` by default. Override it with
 `KEYCLOAK_ISSUER_URI`; `KEYCLOAK_JWK_SET_URI` can separately override the JWK

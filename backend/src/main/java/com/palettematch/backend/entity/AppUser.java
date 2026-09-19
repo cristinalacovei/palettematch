@@ -74,6 +74,11 @@ public class AppUser {
         return email;
     }
 
+    public void updateProfile(String username, String email) {
+        this.username = username;
+        this.email = email;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }

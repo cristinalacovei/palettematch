@@ -167,7 +167,8 @@
 }
 
 .library-card {
-  overflow: hidden;
+  position: relative;
+  overflow: visible;
   min-width: 0;
   border: 1px solid var(--border-subtle);
   border-radius: 15px;
@@ -180,15 +181,22 @@
 }
 
 .library-card:hover {
+  z-index: 10;
   border-color: var(--border-strong);
   box-shadow: var(--shadow-sm);
   transform: translateY(-2px);
+}
+
+.library-card:focus-within {
+  z-index: 10;
 }
 
 .library-swatches {
   display: grid;
   grid-template-columns: repeat(var(--library-color-count), minmax(0, 1fr));
   height: 185px;
+  overflow: hidden;
+  border-radius: 14px 14px 0 0;
   background: var(--surface);
 }
 
@@ -354,6 +362,55 @@
 .library-card__actions .delete-button:hover {
   border-color: color-mix(in srgb, var(--danger) 30%, var(--border-subtle));
   background: color-mix(in srgb, var(--danger) 8%, var(--surface-raised));
+  color: var(--danger);
+}
+
+.library-card__more {
+  position: relative;
+}
+
+.library-card__more-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  width: 170px;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-md);
+}
+
+.library-card__more-menu button {
+  display: flex;
+  width: 100%;
+  min-height: 35px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-body);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.library-card__more-menu button:hover,
+.library-card__more-menu button:focus-visible {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.library-card__more-menu .delete-button,
+.library-card__more-menu .delete-button:hover,
+.library-card__more-menu .delete-button:focus-visible {
   color: var(--danger);
 }
 

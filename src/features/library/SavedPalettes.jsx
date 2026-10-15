@@ -4,7 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 import ExportPalette from "../export/ExportPalette";
 import { generateId } from "../../utils/idUtils";
-import { savePalettes as savePalettesToStorage } from "../../services/paletteStorage";
+import {
+  savePalettes as savePalettesToStorage,
+  updatePalette as updateLocalPalette,
+} from "../../services/paletteStorage";
 import {
   createPalette,
   deletePalette as deleteRemotePalette,
@@ -14,6 +17,7 @@ import {
 import LibraryToolbar from "./LibraryToolbar";
 import EmptyLibrary from "./EmptyLibrary";
 import PaletteCard from "./PaletteCard";
+import EditPalettePanel from "./EditPalettePanel";
 import "./SavedPalettes.css";
 
 import { useAuth } from "../../auth/AuthContext";
@@ -42,6 +46,7 @@ function SavedPalettes() {
   const [editingName, setEditingName] = useState("");
   const [copiedValue, setCopiedValue] = useState("");
   const [paletteToExport, setPaletteToExport] = useState(null);
+  const [paletteToEdit, setPaletteToEdit] = useState(null);
   const [notice, setNotice] = useState("");
   const { authenticated, isReady } = useAuth();
 
@@ -144,6 +149,42 @@ function SavedPalettes() {
   const startRenaming = (palette) => {
     setEditingId(palette.id);
     setEditingName(palette.name);
+  };
+
+  const startEditingPalette = (palette) => {
+    cancelRenaming();
+    setPaletteToEdit(palette);
+  };
+
+  const saveEditedColors = async (palette, colors) => {
+    if (authenticated) {
+      try {
+        const updatedPalette = await updateRemotePalette(palette.id, {
+          name: palette.name,
+          colors,
+          favorite: palette.favorite,
+        });
+        replacePalette(updatedPalette);
+        setPaletteToEdit(null);
+        showNotice("Palette changes saved");
+        return true;
+      } catch (error) {
+        console.error("Could not save palette color changes.", error);
+        showNotice("Could not update palette");
+        return false;
+      }
+    }
+
+    const updatedPalette = updateLocalPalette(palette.id, { colors });
+    if (!updatedPalette) {
+      showNotice("Could not update palette");
+      return false;
+    }
+
+    replacePalette(updatedPalette);
+    setPaletteToEdit(null);
+    showNotice("Palette changes saved");
+    return true;
   };
 
   const cancelRenaming = () => {
@@ -389,6 +430,7 @@ function SavedPalettes() {
                 onExport={setPaletteToExport}
                 onPreview={sendToPreview}
                 onAccessibility={sendToAccessibility}
+                onEdit={startEditingPalette}
                 onDuplicate={duplicatePalette}
                 onDelete={deletePalette}
               />
@@ -412,6 +454,14 @@ function SavedPalettes() {
         isOpen={Boolean(paletteToExport)}
         onClose={() => setPaletteToExport(null)}
       />
+
+      {paletteToEdit && (
+        <EditPalettePanel
+          palette={paletteToEdit}
+          onClose={() => setPaletteToEdit(null)}
+          onSave={saveEditedColors}
+        />
+      )}
     </>
   );
 }

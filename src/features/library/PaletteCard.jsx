@@ -18,6 +18,7 @@ function PaletteCard({
   onExport,
   onPreview,
   onAccessibility,
+  onEdit,
   onDuplicate,
   onDelete,
 }) {
@@ -136,6 +137,7 @@ function PaletteCard({
           onExport={onExport}
           onPreview={onPreview}
           onAccessibility={onAccessibility}
+          onEdit={onEdit}
           onRename={onStartRename}
           onDuplicate={onDuplicate}
           onDelete={onDelete}

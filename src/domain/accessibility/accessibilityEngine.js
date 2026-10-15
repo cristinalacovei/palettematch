@@ -13,19 +13,53 @@ export function getImportedPalette(routeState) {
   const receivedPalette = routeState?.palette;
   if (!receivedPalette || !Array.isArray(receivedPalette.colors)) return null;
 
-  const validColors = receivedPalette.colors
-    .filter(
-      (color) =>
-        typeof color === "string" && HEX_PATTERN.test(normalizeHex(color)),
-    )
-    .map((color) => normalizeHex(color));
+  const normalizedColors = receivedPalette.colors.map((color) =>
+    typeof color === "string" ? normalizeHex(color) : "",
+  );
+  const validColors = normalizedColors.filter((color) =>
+    HEX_PATTERN.test(color),
+  );
   const uniqueColors = [...new Set(validColors)];
-  if (uniqueColors.length === 0) return null;
 
   return {
     name: receivedPalette.name || "Imported palette",
     colors: uniqueColors,
+    invalidColorCount: receivedPalette.colors.length - validColors.length,
+    sourceColorCount: receivedPalette.colors.length,
+    missingColorCount: Math.max(0, 5 - receivedPalette.colors.length),
   };
+}
+
+export function getPaletteContrastPairs(colors) {
+  const normalizedColors = (Array.isArray(colors) ? colors : [])
+    .map((color) => (typeof color === "string" ? normalizeHex(color) : ""))
+    .filter((color) => HEX_PATTERN.test(color));
+  const uniqueColors = [...new Set(normalizedColors)];
+  const pairs = [];
+
+  for (let firstIndex = 0; firstIndex < uniqueColors.length; firstIndex += 1) {
+    for (
+      let secondIndex = firstIndex + 1;
+      secondIndex < uniqueColors.length;
+      secondIndex += 1
+    ) {
+      let foreground = uniqueColors[firstIndex];
+      let background = uniqueColors[secondIndex];
+      if (chroma(foreground).luminance() > chroma(background).luminance()) {
+        [foreground, background] = [background, foreground];
+      }
+
+      const ratio = calculateContrastRatio(foreground, background);
+      pairs.push({
+        foreground,
+        background,
+        ratio,
+        checks: getContrastResults(ratio).slice(0, 4),
+      });
+    }
+  }
+
+  return pairs;
 }
 
 export function findBestContrastPair(colors) {

@@ -9,7 +9,22 @@ jest.mock(
 
 import { hexToOklch } from "../color/oklch";
 import { createPalette } from "./paletteGenerator";
-import { createOklchPalette } from "./oklchPaletteGenerator";
+import {
+  createOklchPalette,
+} from "./oklchPaletteGenerator";
+
+const strategies = [
+  ["variations", [0, 0, 0, 0, 0]],
+  ["analogous", [-30, -15, 0, 15, 30]],
+  ["complementary", [0, 180, 0, 180, 0]],
+  ["triadic", [120, 240, 0, 120, 240]],
+  ["monochromatic", [0, 0, 0, 0, 0]],
+];
+
+function circularHueDifference(actual, expected) {
+  const difference = Math.abs(actual - expected) % 360;
+  return Math.min(difference, 360 - difference);
+}
 
 describe("createOklchPalette", () => {
   it("generates the same deterministic five-color palette for the same base", () => {
@@ -50,6 +65,62 @@ describe("createOklchPalette", () => {
       const difference = Math.abs(hue - 250);
       expect(Math.min(difference, 360 - difference)).toBeLessThan(4);
     }
+  });
+
+  it.each(strategies)(
+    "generates five deterministic HEX colors for the %s strategy",
+    (strategy) => {
+      const first = createOklchPalette("#5B5CE2", strategy);
+      const second = createOklchPalette("#5B5CE2", strategy);
+
+      expect(first).toHaveLength(5);
+      expect(second).toEqual(first);
+      expect(first.every((color) => /^#[0-9A-F]{6}$/.test(color))).toBe(true);
+    },
+  );
+
+  it.each(strategies)(
+    "preserves expected hue relationships for %s",
+    (strategy, hueOffsets) => {
+      const baseHue = hexToOklch("#5B5CE2").h;
+      const colors = createOklchPalette("#5B5CE2", strategy);
+
+      colors.forEach((color, index) => {
+        const hue = hexToOklch(color).h;
+        expect(hue).not.toBeNull();
+        expect(
+          circularHueDifference(hue, baseHue + hueOffsets[index]),
+        ).toBeLessThan(5);
+      });
+    },
+  );
+
+  it.each(strategies)(
+    "uses the blue-violet fallback for achromatic bases with %s",
+    (strategy, hueOffsets) => {
+      const colors = createOklchPalette("#808080", strategy);
+
+      expect(colors).toHaveLength(5);
+      expect(colors.every((color) => /^#[0-9A-F]{6}$/.test(color))).toBe(true);
+      colors.forEach((color, index) => {
+        const hue = hexToOklch(color).h;
+        const expectedHue = (250 + hueOffsets[index] + 360) % 360;
+
+        if (index === 2) {
+          expect(color).toBe("#808080");
+          expect(hue).toBeNull();
+        } else {
+          expect(hue).not.toBeNull();
+          expect(circularHueDifference(hue, expectedHue)).toBeLessThan(5);
+        }
+      });
+    },
+  );
+
+  it("preserves the original default OKLCH variations output", () => {
+    expect(createOklchPalette("#5B5CE2")).toEqual(
+      createOklchPalette("#5B5CE2", "variations"),
+    );
   });
 
   it("leaves the existing harmony generator behavior intact", () => {

@@ -22,6 +22,7 @@ function PaletteGenerator() {
   const initialColors = createPalette(DEFAULT_BASE_COLOR, DEFAULT_PALETTE_TYPE);
   const [baseColor, setBaseColor] = useState(DEFAULT_BASE_COLOR);
   const [generationMode, setGenerationMode] = useState("harmony");
+  const [oklchStrategy, setOklchStrategy] = useState("variations");
   const [type, setType] = useState(DEFAULT_PALETTE_TYPE);
   const [colors, setColors] = useState(initialColors);
   const [lockedColors, setLockedColors] = useState(() =>
@@ -39,7 +40,13 @@ function PaletteGenerator() {
   const selectedPaletteType = PALETTE_TYPES.find((item) => item.value === type);
   const paletteTypeLabel =
     generationMode === "oklch"
-      ? "OKLCH variations"
+      ? {
+          variations: "OKLCH variations",
+          analogous: "Analogous",
+          complementary: "Complementary",
+          triadic: "Triadic",
+          monochromatic: "Monochromatic",
+        }[oklchStrategy]
       : selectedPaletteType?.label;
 
   const showNotice = (message) => {
@@ -77,6 +84,12 @@ function PaletteGenerator() {
     closeColorEditor();
   };
 
+  const handleOklchStrategyChange = (event) => {
+    setOklchStrategy(event.target.value);
+    setLockedColors(colors.map(() => false));
+    closeColorEditor();
+  };
+
   const unlockAllColors = () => {
     setLockedColors(colors.map(() => false));
     showNotice("All colors unlocked");
@@ -93,7 +106,7 @@ function PaletteGenerator() {
 
     const newlyGeneratedColors =
       generationMode === "oklch"
-        ? createOklchPalette(baseColor)
+        ? createOklchPalette(baseColor, oklchStrategy)
         : createPalette(baseColor, type, true);
     const mergedColors = newlyGeneratedColors.map((newColor, index) =>
       lockedColors[index] && colors[index] ? colors[index] : newColor,
@@ -178,9 +191,11 @@ function PaletteGenerator() {
           <GeneratorControls
             baseColor={baseColor}
             generationMode={generationMode}
+            oklchStrategy={oklchStrategy}
             type={type}
             onBaseColorChange={setBaseColor}
             onGenerationModeChange={handleGenerationModeChange}
+            onOklchStrategyChange={handleOklchStrategyChange}
             onTypeChange={handleTypeChange}
             onGenerate={generatePalette}
           />

@@ -10,9 +10,11 @@ import {
 function GeneratorControls({
   baseColor,
   generationMode,
+  oklchStrategy,
   type,
   onBaseColorChange,
   onGenerationModeChange,
+  onOklchStrategyChange,
   onTypeChange,
   onGenerate,
 }) {
@@ -92,6 +94,28 @@ function GeneratorControls({
         </div>
       )}
 
+      {generationMode === "oklch" && (
+        <div className="form-field">
+          <label htmlFor="oklch-strategy">OKLCH harmony</label>
+
+          <div className="select-control">
+            <select
+              id="oklch-strategy"
+              value={oklchStrategy}
+              onChange={onOklchStrategyChange}
+            >
+              <option value="variations">OKLCH variations</option>
+              <option value="analogous">Analogous</option>
+              <option value="complementary">Complementary</option>
+              <option value="triadic">Triadic</option>
+              <option value="monochromatic">Monochromatic</option>
+            </select>
+
+            <ChevronDown size={16} aria-hidden="true" />
+          </div>
+        </div>
+      )}
+
       <button className="generate-button" type="button" onClick={onGenerate}>
         <RefreshCw size={17} aria-hidden="true" />
         Generate palette
@@ -99,7 +123,7 @@ function GeneratorControls({
 
       <p className="control-note">
         {generationMode === "oklch"
-          ? "OKLCH variations keep chromatic hues steady and use a blue-violet hue for gray bases. Lock colors to preserve them."
+          ? "OKLCH harmonies preserve chromatic hue relationships and use a blue-violet hue for gray bases. Lock colors to preserve them."
           : "Lock a color to preserve it or use Edit to change its HEX, RGB and HSL values."}
       </p>
     </aside>

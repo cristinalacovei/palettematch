@@ -32,6 +32,7 @@ describe("PaletteGenerator OKLCH mode", () => {
       target: { value: "oklch" },
     });
     expect(screen.queryByLabelText("Color harmony")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("OKLCH harmony")).toHaveValue("variations");
 
     fireEvent.click(screen.getByRole("button", { name: /generate palette/i }));
 
@@ -43,6 +44,14 @@ describe("PaletteGenerator OKLCH mode", () => {
     ).toHaveLength(5);
     expect(
       screen.getByRole("button", { name: "Copy color #5B5CE2" }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("OKLCH harmony"), {
+      target: { value: "complementary" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /generate palette/i }));
+    expect(
+      screen.getByText("Complementary", { selector: "strong" }),
     ).toBeInTheDocument();
   });
 });

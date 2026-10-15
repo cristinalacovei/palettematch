@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import chroma from "chroma-js";
 import { Check, Copy, SlidersHorizontal, X } from "lucide-react";
+import { hexToOklch } from "../../domain/color/oklch";
 import "./ColorEditor.css";
 
 function clamp(value, minimum, maximum) {
@@ -35,6 +36,7 @@ function getColorValues(color) {
 
 function ColorEditor({ color, colorIndex, onChange, onClose }) {
   const initialValues = getColorValues(color);
+  const oklchValues = hexToOklch(color);
 
   const [hexValue, setHexValue] = useState(initialValues.hex);
 
@@ -353,6 +355,39 @@ function ColorEditor({ color, colorIndex, onChange, onClose }) {
                 }
               />
             </label>
+          </div>
+        </section>
+
+        <section className="editor-section">
+          <div className="editor-section__heading">
+            <div>
+              <h3>OKLCH</h3>
+
+              <p>Perceptual color values · read-only</p>
+            </div>
+          </div>
+
+          <div className="channel-grid oklch-grid">
+            <div>
+              <span>L</span>
+              <output aria-label="OKLCH lightness">
+                {oklchValues.l.toFixed(3)}
+              </output>
+            </div>
+            <div>
+              <span>C</span>
+              <output aria-label="OKLCH chroma">
+                {oklchValues.c.toFixed(4)}
+              </output>
+            </div>
+            <div>
+              <span>H</span>
+              <output aria-label="OKLCH hue">
+                {oklchValues.h === null
+                  ? "—"
+                  : `${oklchValues.h.toFixed(1)}°`}
+              </output>
+            </div>
           </div>
         </section>
 

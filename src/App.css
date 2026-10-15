@@ -21,6 +21,28 @@
   gap: 24px;
 }
 
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-header__actions button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-header__user {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .brand {
   display: inline-flex;
   width: max-content;
@@ -47,9 +69,15 @@
   flex: 1;
 }
 
-.brand-mark span:nth-child(1) { background: #fb7185; }
-.brand-mark span:nth-child(2) { background: #8b5cf6; }
-.brand-mark span:nth-child(3) { background: #22d3ee; }
+.brand-mark span:nth-child(1) {
+  background: #fb7185;
+}
+.brand-mark span:nth-child(2) {
+  background: #8b5cf6;
+}
+.brand-mark span:nth-child(3) {
+  background: #22d3ee;
+}
 
 .main-nav {
   display: flex;
@@ -73,7 +101,10 @@
   font-weight: 600;
   line-height: 1;
   text-decoration: none;
-  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .nav-link:hover {
@@ -100,7 +131,10 @@
   color: var(--text-muted);
   cursor: pointer;
   box-shadow: var(--shadow-xs);
-  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .theme-toggle:hover {
@@ -136,6 +170,10 @@
 }
 
 @media (max-width: 420px) {
-  .nav-link { font-size: 0.8rem; }
-  .nav-link svg { display: none; }
+  .nav-link {
+    font-size: 0.8rem;
+  }
+  .nav-link svg {
+    display: none;
+  }
 }

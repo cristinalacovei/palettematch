@@ -77,8 +77,17 @@ public class Palette {
     }
 
     public void replaceColors(List<String> hexValues) {
-        colors.clear();
-        for (int position = 0; position < hexValues.size(); position++) {
+        int sharedColorCount = Math.min(colors.size(), hexValues.size());
+
+        for (int position = 0; position < sharedColorCount; position++) {
+            colors.get(position).updateHexValue(hexValues.get(position));
+        }
+
+        while (colors.size() > hexValues.size()) {
+            colors.remove(colors.size() - 1);
+        }
+
+        for (int position = sharedColorCount; position < hexValues.size(); position++) {
             addColor(hexValues.get(position), position);
         }
     }

@@ -44,6 +44,10 @@ public class PaletteColor {
         this.position = position;
     }
 
+    void updateHexValue(String hexValue) {
+        this.hexValue = hexValue;
+    }
+
     public UUID getId() {
         return id;
     }

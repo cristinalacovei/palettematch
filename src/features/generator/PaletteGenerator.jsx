@@ -8,6 +8,8 @@ import {
 } from "../../domain/palette/paletteConstants";
 import { createPalette } from "../../domain/palette/paletteGenerator";
 import { addPalette } from "../../services/paletteStorage";
+import { createPalette as createRemotePalette } from "../../services/paletteApi";
+import { useAuth } from "../../auth/AuthContext";
 import ColorEditor from "./ColorEditor.jsx";
 import GeneratorControls from "./GeneratorControls";
 import PalettePreview from "./PalettePreview";
@@ -27,6 +29,7 @@ function PaletteGenerator() {
   const [paletteName, setPaletteName] = useState("");
   const [notice, setNotice] = useState("");
   const saveInputRef = useRef(null);
+  const { authenticated } = useAuth();
 
   const lockedCount = lockedColors.filter(Boolean).length;
   const editingColor =
@@ -96,7 +99,7 @@ function PaletteGenerator() {
     );
   };
 
-  const saveCurrentPalette = () => {
+  const saveCurrentPalette = async () => {
     const trimmedName = paletteName.trim();
 
     if (!trimmedName) {
@@ -104,11 +107,21 @@ function PaletteGenerator() {
       return;
     }
 
-    const savedPalette = addPalette({
-      name: trimmedName,
-      colors,
-      source: "generator",
-    });
+    let savedPalette;
+    try {
+      const save = authenticated ? createRemotePalette : addPalette;
+      savedPalette = await save({
+        name: trimmedName,
+        colors,
+        source: "generator",
+        favorite: false,
+        designSystem: null,
+      });
+    } catch (error) {
+      console.error("Could not save generated palette.", error);
+      showNotice("Could not save palette");
+      return;
+    }
 
     if (!savedPalette) {
       showNotice("The palette could not be saved");

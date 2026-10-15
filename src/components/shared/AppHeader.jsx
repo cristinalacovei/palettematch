@@ -1,7 +1,19 @@
 import React from "react";
+
 import { Link, NavLink } from "react-router-dom";
-import { FolderHeart, Image, Palette, ShieldCheck } from "lucide-react";
+
+import {
+  FolderHeart,
+  Image,
+  LogIn,
+  LogOut,
+  Palette,
+  ShieldCheck,
+} from "lucide-react";
+
 import ThemeToggle from "./ToggleTheme";
+
+import { useAuth } from "../../auth/AuthContext";
 
 const navItems = [
   {
@@ -27,6 +39,8 @@ const navItems = [
 ];
 
 function AppHeader() {
+  const { isReady, authenticated, currentUser, login, logout } = useAuth();
+
   return (
     <header className="app-header">
       <div className="app-header__inner">
@@ -50,12 +64,35 @@ function AppHeader() {
               to={to}
             >
               <NavIcon size={17} aria-hidden="true" />
+
               <span>{label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <ThemeToggle />
+        <div className="app-header__actions">
+          {isReady && authenticated && currentUser && (
+            <span className="app-header__user">{currentUser.username}</span>
+          )}
+
+          {isReady && !authenticated && (
+            <button className="nav-link" type="button" onClick={login}>
+              <LogIn size={17} aria-hidden="true" />
+
+              <span>Login</span>
+            </button>
+          )}
+
+          {isReady && authenticated && (
+            <button className="nav-link" type="button" onClick={logout}>
+              <LogOut size={17} aria-hidden="true" />
+
+              <span>Logout</span>
+            </button>
+          )}
+
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

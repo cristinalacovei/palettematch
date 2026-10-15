@@ -2,6 +2,8 @@ import React, { useRef, useState } from "react";
 import { Check, ImagePlus } from "lucide-react";
 
 import { addPalette } from "../../services/paletteStorage";
+import { createPalette } from "../../services/paletteApi";
+import { useAuth } from "../../auth/AuthContext";
 import ImageUploadPanel from "./ImageUploadPanel";
 import ExtractedPalette from "./ExtractedPalette";
 import SaveExtractedPaletteForm from "./SaveExtractedPaletteForm";
@@ -19,6 +21,7 @@ function ImagePalette({ onExtract }) {
   const [copiedColor, setCopiedColor] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const { authenticated } = useAuth();
 
   const showNotice = (message) => {
     setNotice(message);
@@ -95,7 +98,7 @@ function ImagePalette({ onExtract }) {
     }
   };
 
-  const savePalette = () => {
+  const savePalette = async () => {
     const trimmedName = paletteName.trim();
     if (!trimmedName) {
       setError("Give the palette a name before saving it.");
@@ -106,11 +109,21 @@ function ImagePalette({ onExtract }) {
       return;
     }
 
-    const savedPalette = addPalette({
-      name: trimmedName,
-      colors: palette,
-      source: "image",
-    });
+    let savedPalette;
+    try {
+      const save = authenticated ? createPalette : addPalette;
+      savedPalette = await save({
+        name: trimmedName,
+        colors: palette,
+        source: "image",
+        favorite: false,
+        designSystem: null,
+      });
+    } catch (saveError) {
+      console.error("Could not save extracted palette.", saveError);
+      setError("Could not save palette.");
+      return;
+    }
     if (!savedPalette) {
       setError("The palette could not be saved.");
       return;

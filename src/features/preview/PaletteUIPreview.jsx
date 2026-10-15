@@ -12,6 +12,8 @@ import {
   getPreviewContrastResults,
 } from "../../domain/accessibility/accessibilityEngine";
 import { savePaletteDesignSystem } from "../../services/paletteStorage";
+import { updateDesignSystem } from "../../services/paletteApi";
+import { useAuth } from "../../auth/AuthContext";
 import RoleAssignmentPanel from "./RoleAssignmentPanel";
 import InterfacePreview from "./InterfacePreview";
 import PreviewAccessibilitySummary from "./PreviewAccessibilitySummary";
@@ -27,6 +29,7 @@ function PaletteUIPreview() {
     importedPalette ? getInitialRoleAssignments(importedPalette) : null,
   );
   const [saveStatus, setSaveStatus] = useState("");
+  const { authenticated } = useAuth();
 
   const primaryText = useMemo(
     () =>
@@ -76,20 +79,33 @@ function PaletteUIPreview() {
     setSaveStatus("");
   };
 
-  const saveDesignSystem = () => {
+  const saveDesignSystem = async () => {
     if (!importedPalette.id) {
       setSaveStatus("error");
       return;
     }
 
-    const updatedPalette = savePaletteDesignSystem(importedPalette.id, roles);
-    if (!updatedPalette) {
-      setSaveStatus("error");
-      return;
-    }
+    try {
+      const save = authenticated ? updateDesignSystem : savePaletteDesignSystem;
+      const updatedPalette = await save(importedPalette.id, {
+        background: roles.background,
+        surface: roles.surface,
+        text: roles.text,
+        primary: roles.primary,
+        accent: roles.accent,
+      });
 
-    setSaveStatus("saved");
-    window.setTimeout(() => setSaveStatus(""), 2000);
+      if (!updatedPalette) {
+        setSaveStatus("error");
+        return;
+      }
+
+      setSaveStatus("saved");
+      window.setTimeout(() => setSaveStatus(""), 2000);
+    } catch (error) {
+      console.error("Could not save design system.", error);
+      setSaveStatus("error");
+    }
   };
 
   return (

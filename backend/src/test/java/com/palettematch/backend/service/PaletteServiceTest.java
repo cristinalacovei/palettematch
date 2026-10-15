@@ -96,6 +96,46 @@ class PaletteServiceTest {
     }
 
     @Test
+    void updatePreservesUnchangedColorsForRenameAndFavoriteChanges() {
+        Palette palette = new Palette(user, "Ocean", PaletteSource.GENERATOR, false);
+        palette.replaceColors(List.of("#112233", "#445566"));
+        var originalColors = List.copyOf(palette.getColors());
+        when(paletteRepository.findByIdAndUserId(PALETTE_ID, USER_ID)).thenReturn(Optional.of(palette));
+
+        PaletteResponse renamed = paletteService.update(
+                jwt,
+                PALETTE_ID,
+                new UpdatePaletteRequest("Midnight", List.of("#112233", "#445566"), false));
+        PaletteResponse favorited = paletteService.update(
+                jwt,
+                PALETTE_ID,
+                new UpdatePaletteRequest("Midnight", List.of("#112233", "#445566"), true));
+
+        assertThat(renamed.name()).isEqualTo("Midnight");
+        assertThat(favorited.favorite()).isTrue();
+        assertThat(palette.getColors()).containsExactlyElementsOf(originalColors);
+        assertThat(palette.getColors().get(0)).isSameAs(originalColors.get(0));
+        assertThat(palette.getColors().get(1)).isSameAs(originalColors.get(1));
+    }
+
+    @Test
+    void updateChangesColorValuesWithoutReplacingUnchangedPositions() {
+        Palette palette = new Palette(user, "Ocean", PaletteSource.GENERATOR, false);
+        palette.replaceColors(List.of("#112233", "#445566"));
+        var firstColor = palette.getColors().getFirst();
+        when(paletteRepository.findByIdAndUserId(PALETTE_ID, USER_ID)).thenReturn(Optional.of(palette));
+
+        PaletteResponse response = paletteService.update(
+                jwt,
+                PALETTE_ID,
+                new UpdatePaletteRequest("Ocean", List.of("#AA0000", "#445566", "#778899"), false));
+
+        assertThat(response.colors()).containsExactly("#AA0000", "#445566", "#778899");
+        assertThat(palette.getColors().getFirst()).isSameAs(firstColor);
+        assertThat(palette.getColors().getFirst().getHexValue()).isEqualTo("#AA0000");
+    }
+
+    @Test
     void deleteUsesOwnershipAwareLookup() {
         Palette palette = new Palette(user, "Ocean", PaletteSource.GENERATOR, false);
         when(paletteRepository.findByIdAndUserId(PALETTE_ID, USER_ID)).thenReturn(Optional.of(palette));

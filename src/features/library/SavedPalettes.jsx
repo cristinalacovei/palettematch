@@ -1,17 +1,25 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Check, FolderHeart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import ExportPalette from "../export/ExportPalette";
 import { generateId } from "../../utils/idUtils";
+import { savePalettes as savePalettesToStorage } from "../../services/paletteStorage";
 import {
-  loadPalettes,
-  savePalettes as savePalettesToStorage,
-} from "../../services/paletteStorage";
+  createPalette,
+  deletePalette as deleteRemotePalette,
+  getPalettes,
+  updateDesignSystem as updateRemotePaletteDesignSystem,
+  updatePalette as updateRemotePalette,
+} from "../../services/paletteApi";
 import LibraryToolbar from "./LibraryToolbar";
 import EmptyLibrary from "./EmptyLibrary";
 import PaletteCard from "./PaletteCard";
 import "./SavedPalettes.css";
+
+import { useAuth } from "../../auth/AuthContext";
+
+import { loadPalettes as loadLocalPalettes } from "../../services/paletteStorage";
 
 function formatDate(dateValue) {
   const date = new Date(dateValue);
@@ -29,7 +37,6 @@ function formatDate(dateValue) {
 
 function SavedPalettes() {
   const navigate = useNavigate();
-  const [palettes, setPalettes] = useState(loadPalettes);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("newest");
   const [editingId, setEditingId] = useState(null);
@@ -37,13 +44,59 @@ function SavedPalettes() {
   const [copiedValue, setCopiedValue] = useState("");
   const [paletteToExport, setPaletteToExport] = useState(null);
   const [notice, setNotice] = useState("");
+  const { authenticated, isReady } = useAuth();
+
+  const [palettes, setPalettes] = useState([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadLibrary() {
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const loadedPalettes = authenticated
+          ? await getPalettes()
+          : loadLocalPalettes();
+
+        if (!cancelled) {
+          setPalettes(loadedPalettes || []);
+        }
+      } catch (error) {
+        console.error("Could not load palettes.", error);
+
+        if (!cancelled) {
+          setLoadError("Your palette library could not be loaded.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadLibrary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authenticated, isReady]);
 
   const showNotice = (message) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 1800);
   };
 
-  const persistPalettes = (updatedPalettes) => {
+  const persistLocalPalettes = (updatedPalettes) => {
     if (!savePalettesToStorage(updatedPalettes)) {
       showNotice("The library could not be updated");
       return false;
@@ -53,12 +106,38 @@ function SavedPalettes() {
     return true;
   };
 
-  const toggleFavorite = (paletteId) => {
-    persistPalettes(
-      palettes.map((palette) =>
-        palette.id === paletteId
-          ? { ...palette, favorite: !palette.favorite }
-          : palette,
+  const replacePalette = (updatedPalette) => {
+    setPalettes((currentPalettes) =>
+      currentPalettes.map((palette) =>
+        palette.id === updatedPalette.id ? updatedPalette : palette,
+      ),
+    );
+  };
+
+  const toggleFavorite = async (paletteId) => {
+    const palette = palettes.find((item) => item.id === paletteId);
+    if (!palette) return;
+
+    const updates = {
+      name: palette.name,
+      colors: palette.colors,
+      favorite: !palette.favorite,
+    };
+
+    if (authenticated) {
+      try {
+        const updatedPalette = await updateRemotePalette(paletteId, updates);
+        replacePalette(updatedPalette);
+      } catch (error) {
+        console.error("Could not update palette favorite.", error);
+        showNotice("Could not update palette");
+      }
+      return;
+    }
+
+    persistLocalPalettes(
+      palettes.map((item) =>
+        item.id === paletteId ? { ...item, favorite: updates.favorite } : item,
       ),
     );
   };
@@ -73,16 +152,34 @@ function SavedPalettes() {
     setEditingName("");
   };
 
-  const saveNewName = (paletteId) => {
+  const saveNewName = async (paletteId) => {
     const trimmedName = editingName.trim();
     if (!trimmedName) return;
 
+    const palette = palettes.find((item) => item.id === paletteId);
+    if (!palette) return;
+
+    if (authenticated) {
+      try {
+        const updatedPalette = await updateRemotePalette(paletteId, {
+          name: trimmedName,
+          colors: palette.colors,
+          favorite: palette.favorite,
+        });
+        replacePalette(updatedPalette);
+        cancelRenaming();
+        showNotice("Palette renamed");
+      } catch (error) {
+        console.error("Could not rename palette.", error);
+        showNotice("Could not update palette");
+      }
+      return;
+    }
+
     if (
-      persistPalettes(
-        palettes.map((palette) =>
-          palette.id === paletteId
-            ? { ...palette, name: trimmedName }
-            : palette,
+      persistLocalPalettes(
+        palettes.map((item) =>
+          item.id === paletteId ? { ...item, name: trimmedName } : item,
         ),
       )
     ) {
@@ -91,31 +188,76 @@ function SavedPalettes() {
     }
   };
 
-  const duplicatePalette = (palette) => {
+  const duplicatePalette = async (palette) => {
+    if (authenticated) {
+      try {
+        const duplicatedPalette = await createPalette({
+          name: `${palette.name} copy`,
+          colors: palette.colors,
+          source: palette.source,
+          favorite: false,
+          designSystem: null,
+        });
+
+        let completedPalette = duplicatedPalette;
+        if (palette.designSystem) {
+          completedPalette = await updateRemotePaletteDesignSystem(
+            duplicatedPalette.id,
+            {
+              background: palette.designSystem.background,
+              surface: palette.designSystem.surface,
+              text: palette.designSystem.text,
+              primary: palette.designSystem.primary,
+              accent: palette.designSystem.accent,
+            },
+          );
+        }
+
+        setPalettes((currentPalettes) => [completedPalette, ...currentPalettes]);
+        showNotice("Palette duplicated");
+      } catch (error) {
+        console.error("Could not duplicate palette.", error);
+        showNotice("Could not save palette");
+      }
+      return;
+    }
+
     const duplicatedPalette = {
       ...palette,
       id: generateId(),
       name: `${palette.name} copy`,
       colors: [...palette.colors],
       favorite: false,
-      designSystem: palette.designSystem
-        ? { ...palette.designSystem }
-        : null,
+      designSystem: palette.designSystem ? { ...palette.designSystem } : null,
       createdAt: new Date().toISOString(),
     };
 
-    if (persistPalettes([duplicatedPalette, ...palettes])) {
+    if (persistLocalPalettes([duplicatedPalette, ...palettes])) {
       showNotice("Palette duplicated");
     }
   };
 
-  const deletePalette = (paletteId) => {
+  const deletePalette = async (paletteId) => {
     const palette = palettes.find((item) => item.id === paletteId);
     if (!window.confirm(`Delete "${palette?.name || "this palette"}"?`)) {
       return;
     }
 
-    if (persistPalettes(palettes.filter((item) => item.id !== paletteId))) {
+    if (authenticated) {
+      try {
+        await deleteRemotePalette(paletteId);
+        setPalettes((currentPalettes) =>
+          currentPalettes.filter((item) => item.id !== paletteId),
+        );
+        showNotice("Palette deleted");
+      } catch (error) {
+        console.error("Could not delete palette.", error);
+        showNotice("Could not delete palette");
+      }
+      return;
+    }
+
+    if (persistLocalPalettes(palettes.filter((item) => item.id !== paletteId))) {
       showNotice("Palette deleted");
     }
   };
@@ -224,19 +366,23 @@ function SavedPalettes() {
           />
         )}
 
-        {palettes.length === 0 ? (
+        {isLoading ? (
+          <p>Loading your palette library...</p>
+        ) : loadError ? (
+          <p>{loadError}</p>
+        ) : palettes.length === 0 ? (
           <EmptyLibrary hasSearch={false} />
         ) : visiblePalettes.length === 0 ? (
-          <EmptyLibrary
-            hasSearch
-            onClearSearch={() => setSearchQuery("")}
-          />
+          <EmptyLibrary hasSearch onClearSearch={() => setSearchQuery("")} />
         ) : (
           <section className="library-grid">
             {visiblePalettes.map((palette) => (
               <PaletteCard
                 key={palette.id}
-                palette={{ ...palette, formattedDate: formatDate(palette.createdAt) }}
+                palette={{
+                  ...palette,
+                  formattedDate: formatDate(palette.createdAt),
+                }}
                 editing={editingId === palette.id}
                 editingName={editingName}
                 copiedValue={copiedValue}

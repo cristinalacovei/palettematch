@@ -3,7 +3,9 @@ package com.palettematch.backend.entity;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import jakarta.persistence.CascadeType;
@@ -77,10 +79,11 @@ public class Palette {
     }
 
     public void replaceColors(List<String> hexValues) {
+        colors.sort(Comparator.comparingInt(PaletteColor::getPosition));
         int sharedColorCount = Math.min(colors.size(), hexValues.size());
 
         for (int position = 0; position < sharedColorCount; position++) {
-            colors.get(position).updateHexValue(hexValues.get(position));
+            colors.get(position).update(hexValues.get(position), position);
         }
 
         while (colors.size() > hexValues.size()) {
@@ -90,6 +93,47 @@ public class Palette {
         for (int position = sharedColorCount; position < hexValues.size(); position++) {
             addColor(hexValues.get(position), position);
         }
+    }
+
+    public boolean prepareColorsForReplacement(int replacementCount) {
+        colors.sort(Comparator.comparingInt(PaletteColor::getPosition));
+        Set<Integer> occupiedPositions = new HashSet<>();
+        for (PaletteColor color : colors) {
+            occupiedPositions.add(color.getPosition());
+        }
+
+        int sharedColorCount = Math.min(colors.size(), replacementCount);
+        boolean requiresTemporaryPositions = false;
+        for (int position = 0; position < sharedColorCount; position++) {
+            if (colors.get(position).getPosition() != position) {
+                requiresTemporaryPositions = true;
+                break;
+            }
+        }
+        for (int position = sharedColorCount; position < replacementCount; position++) {
+            if (occupiedPositions.contains(position)) {
+                requiresTemporaryPositions = true;
+                break;
+            }
+        }
+
+        if (!requiresTemporaryPositions) {
+            return false;
+        }
+
+        long temporaryPosition = replacementCount;
+        for (PaletteColor color : colors) {
+            while (temporaryPosition <= Integer.MAX_VALUE
+                    && occupiedPositions.contains((int) temporaryPosition)) {
+                temporaryPosition++;
+            }
+            if (temporaryPosition > Integer.MAX_VALUE) {
+                throw new IllegalStateException("Unable to assign temporary palette color positions");
+            }
+            color.updatePosition((int) temporaryPosition);
+            temporaryPosition++;
+        }
+        return true;
     }
 
     public void updateDetails(String name, boolean favorite) {

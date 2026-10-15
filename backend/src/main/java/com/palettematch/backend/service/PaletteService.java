@@ -68,7 +68,11 @@ public class PaletteService {
     public PaletteResponse update(Jwt jwt, UUID paletteId, UpdatePaletteRequest request) {
         Palette palette = findOwned(jwt, paletteId);
         palette.updateDetails(request.name().trim(), request.favorite());
-        palette.replaceColors(normalizeColors(request.colors()));
+        List<String> colors = normalizeColors(request.colors());
+        if (palette.prepareColorsForReplacement(colors.size())) {
+            paletteRepository.flush();
+        }
+        palette.replaceColors(colors);
         return paletteMapper.toResponse(palette);
     }
 

@@ -9,7 +9,6 @@ import {
   createPalette,
   deletePalette as deleteRemotePalette,
   getPalettes,
-  updateDesignSystem as updateRemotePaletteDesignSystem,
   updatePalette as updateRemotePalette,
 } from "../../services/paletteApi";
 import LibraryToolbar from "./LibraryToolbar";
@@ -196,24 +195,18 @@ function SavedPalettes() {
           colors: palette.colors,
           source: palette.source,
           favorite: false,
-          designSystem: null,
+          designSystem: palette.designSystem
+            ? {
+                background: palette.designSystem.background,
+                surface: palette.designSystem.surface,
+                text: palette.designSystem.text,
+                primary: palette.designSystem.primary,
+                accent: palette.designSystem.accent,
+              }
+            : null,
         });
 
-        let completedPalette = duplicatedPalette;
-        if (palette.designSystem) {
-          completedPalette = await updateRemotePaletteDesignSystem(
-            duplicatedPalette.id,
-            {
-              background: palette.designSystem.background,
-              surface: palette.designSystem.surface,
-              text: palette.designSystem.text,
-              primary: palette.designSystem.primary,
-              accent: palette.designSystem.accent,
-            },
-          );
-        }
-
-        setPalettes((currentPalettes) => [completedPalette, ...currentPalettes]);
+        setPalettes((currentPalettes) => [duplicatedPalette, ...currentPalettes]);
         showNotice("Palette duplicated");
       } catch (error) {
         console.error("Could not duplicate palette.", error);

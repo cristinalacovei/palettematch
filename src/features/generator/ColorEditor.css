@@ -223,29 +223,9 @@
   gap: 6px;
 }
 
-.oklch-grid > div {
-  display: grid;
-  gap: 6px;
-}
-
-.oklch-grid > div > span {
+.oklch-grid input:disabled {
   color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-.oklch-grid output {
-  display: flex;
-  min-width: 0;
-  height: 42px;
-  align-items: center;
-  padding: 0 9px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface-raised);
-  color: var(--text-strong);
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 0.78rem;
+  cursor: not-allowed;
 }
 
 .channel-grid label > span {

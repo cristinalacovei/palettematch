@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import chroma from "chroma-js";
 import { Check, Copy, SlidersHorizontal, X } from "lucide-react";
-import { hexToOklch } from "../../domain/color/oklch";
+import {
+  ACHROMATIC_CHROMA_THRESHOLD,
+  hexToOklch,
+  oklchToHex,
+} from "../../domain/color/oklch";
 import "./ColorEditor.css";
 
 function clamp(value, minimum, maximum) {
@@ -34,6 +38,24 @@ function getColorValues(color) {
   };
 }
 
+function getOklchInputValues(color) {
+  const values = hexToOklch(color);
+  return {
+    l: values.l.toFixed(3),
+    c: values.c.toFixed(4),
+    h: values.h === null ? "" : values.h.toFixed(1),
+  };
+}
+
+function getOklchDraftValues(color) {
+  const values = hexToOklch(color);
+  return {
+    l: values.l,
+    c: values.c,
+    h: values.h ?? 0,
+  };
+}
+
 function ColorEditor({ color, colorIndex, onChange, onClose }) {
   const initialValues = getColorValues(color);
   const oklchValues = hexToOklch(color);
@@ -43,6 +65,16 @@ function ColorEditor({ color, colorIndex, onChange, onClose }) {
   const [rgbValues, setRgbValues] = useState(initialValues.rgb);
 
   const [hslValues, setHslValues] = useState(initialValues.hsl);
+
+  const [oklchInputValues, setOklchInputValues] = useState(() =>
+    getOklchInputValues(color),
+  );
+
+  const [oklchDraftValues, setOklchDraftValues] = useState(() =>
+    getOklchDraftValues(color),
+  );
+
+  const [isEditingOklch, setIsEditingOklch] = useState(false);
 
   const [copied, setCopied] = useState(false);
 
@@ -56,6 +88,13 @@ function ColorEditor({ color, colorIndex, onChange, onClose }) {
     setHslValues(updatedValues.hsl);
     setHexError(false);
   }, [color]);
+
+  useEffect(() => {
+    if (!isEditingOklch) {
+      setOklchInputValues(getOklchInputValues(color));
+      setOklchDraftValues(getOklchDraftValues(color));
+    }
+  }, [color, isEditingOklch]);
 
   useEffect(() => {
     const closeWithEscape = (event) => {
@@ -153,6 +192,33 @@ function ColorEditor({ color, colorIndex, onChange, onClose }) {
         updatedHslValues.lightness / 100,
       ),
     );
+  };
+
+  const handleOklchChange = (channel, inputValue) => {
+    setOklchInputValues((currentValues) => ({
+      ...currentValues,
+      [channel]: inputValue,
+    }));
+
+    if (inputValue.trim() === "") {
+      return;
+    }
+
+    const numericValue = Number(inputValue);
+    if (!Number.isFinite(numericValue)) {
+      return;
+    }
+
+    const limits = {
+      l: [0, 1],
+      c: [0, 1],
+      h: [0, 360],
+    }[channel];
+    const nextValue = clamp(numericValue, limits[0], limits[1]);
+    const currentValues = { ...oklchDraftValues, [channel]: nextValue };
+    setOklchDraftValues(currentValues);
+
+    updateParentColor(oklchToHex(currentValues));
   };
 
   const copyCurrentColor = async () => {
@@ -363,31 +429,57 @@ function ColorEditor({ color, colorIndex, onChange, onClose }) {
             <div>
               <h3>OKLCH</h3>
 
-              <p>Perceptual color values · read-only</p>
+              <p>Perceptual color values</p>
             </div>
           </div>
 
           <div className="channel-grid oklch-grid">
-            <div>
+            <label>
               <span>L</span>
-              <output aria-label="OKLCH lightness">
-                {oklchValues.l.toFixed(3)}
-              </output>
-            </div>
-            <div>
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.001"
+                value={oklchInputValues.l}
+                onFocus={() => setIsEditingOklch(true)}
+                onBlur={() => setIsEditingOklch(false)}
+                onChange={(event) => handleOklchChange("l", event.target.value)}
+                aria-label="OKLCH lightness"
+              />
+            </label>
+            <label>
               <span>C</span>
-              <output aria-label="OKLCH chroma">
-                {oklchValues.c.toFixed(4)}
-              </output>
-            </div>
-            <div>
-              <span>H</span>
-              <output aria-label="OKLCH hue">
-                {oklchValues.h === null
-                  ? "—"
-                  : `${oklchValues.h.toFixed(1)}°`}
-              </output>
-            </div>
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.0001"
+                value={oklchInputValues.c}
+                onFocus={() => setIsEditingOklch(true)}
+                onBlur={() => setIsEditingOklch(false)}
+                onChange={(event) => handleOklchChange("c", event.target.value)}
+                aria-label="OKLCH chroma"
+              />
+            </label>
+            <label>
+              <span>H°</span>
+              <input
+                type="number"
+                min="0"
+                max="360"
+                step="0.1"
+                value={oklchInputValues.h}
+                onFocus={() => setIsEditingOklch(true)}
+                onBlur={() => setIsEditingOklch(false)}
+                onChange={(event) => handleOklchChange("h", event.target.value)}
+                aria-label="OKLCH hue"
+                placeholder="—"
+                disabled={
+                  oklchValues.c <= ACHROMATIC_CHROMA_THRESHOLD
+                }
+              />
+            </label>
           </div>
         </section>
 

@@ -9,8 +9,10 @@ import {
 
 function GeneratorControls({
   baseColor,
+  generationMode,
   type,
   onBaseColorChange,
+  onGenerationModeChange,
   onTypeChange,
   onGenerate,
 }) {
@@ -54,22 +56,41 @@ function GeneratorControls({
       </div>
 
       <div className="form-field">
-        <label htmlFor="harmony">Color harmony</label>
+        <label htmlFor="generation-mode">Generation mode</label>
 
         <div className="select-control">
-          <select id="harmony" value={type} onChange={onTypeChange}>
-            {PALETTE_TYPES.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
+          <select
+            id="generation-mode"
+            value={generationMode}
+            onChange={onGenerationModeChange}
+          >
+            <option value="harmony">Color harmony</option>
+            <option value="oklch">OKLCH variations</option>
           </select>
 
           <ChevronDown size={16} aria-hidden="true" />
         </div>
-
-        <p>{PALETTE_DESCRIPTIONS[type]}</p>
       </div>
+
+      {generationMode === "harmony" && (
+        <div className="form-field">
+          <label htmlFor="harmony">Color harmony</label>
+
+          <div className="select-control">
+            <select id="harmony" value={type} onChange={onTypeChange}>
+              {PALETTE_TYPES.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            <ChevronDown size={16} aria-hidden="true" />
+          </div>
+
+          <p>{PALETTE_DESCRIPTIONS[type]}</p>
+        </div>
+      )}
 
       <button className="generate-button" type="button" onClick={onGenerate}>
         <RefreshCw size={17} aria-hidden="true" />
@@ -77,8 +98,9 @@ function GeneratorControls({
       </button>
 
       <p className="control-note">
-        Lock a color to preserve it or use Edit to change its HEX, RGB and HSL
-        values.
+        {generationMode === "oklch"
+          ? "OKLCH variations keep chromatic hues steady and use a blue-violet hue for gray bases. Lock colors to preserve them."
+          : "Lock a color to preserve it or use Edit to change its HEX, RGB and HSL values."}
       </p>
     </aside>
   );

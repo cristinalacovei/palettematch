@@ -7,6 +7,7 @@ import {
   PALETTE_TYPES,
 } from "../../domain/palette/paletteConstants";
 import { createPalette } from "../../domain/palette/paletteGenerator";
+import { createOklchPalette } from "../../domain/palette/oklchPaletteGenerator";
 import { addPalette } from "../../services/paletteStorage";
 import { createPalette as createRemotePalette } from "../../services/paletteApi";
 import { useAuth } from "../../auth/AuthContext";
@@ -20,6 +21,7 @@ import "./PaletteGenerator.css";
 function PaletteGenerator() {
   const initialColors = createPalette(DEFAULT_BASE_COLOR, DEFAULT_PALETTE_TYPE);
   const [baseColor, setBaseColor] = useState(DEFAULT_BASE_COLOR);
+  const [generationMode, setGenerationMode] = useState("harmony");
   const [type, setType] = useState(DEFAULT_PALETTE_TYPE);
   const [colors, setColors] = useState(initialColors);
   const [lockedColors, setLockedColors] = useState(() =>
@@ -35,6 +37,10 @@ function PaletteGenerator() {
   const editingColor =
     editingColorIndex !== null ? colors[editingColorIndex] : null;
   const selectedPaletteType = PALETTE_TYPES.find((item) => item.value === type);
+  const paletteTypeLabel =
+    generationMode === "oklch"
+      ? "OKLCH variations"
+      : selectedPaletteType?.label;
 
   const showNotice = (message) => {
     setNotice(message);
@@ -65,6 +71,12 @@ function PaletteGenerator() {
     closeColorEditor();
   };
 
+  const handleGenerationModeChange = (event) => {
+    setGenerationMode(event.target.value);
+    setLockedColors(colors.map(() => false));
+    closeColorEditor();
+  };
+
   const unlockAllColors = () => {
     setLockedColors(colors.map(() => false));
     showNotice("All colors unlocked");
@@ -79,7 +91,10 @@ function PaletteGenerator() {
       return;
     }
 
-    const newlyGeneratedColors = createPalette(baseColor, type, true);
+    const newlyGeneratedColors =
+      generationMode === "oklch"
+        ? createOklchPalette(baseColor)
+        : createPalette(baseColor, type, true);
     const mergedColors = newlyGeneratedColors.map((newColor, index) =>
       lockedColors[index] && colors[index] ? colors[index] : newColor,
     );
@@ -162,15 +177,17 @@ function PaletteGenerator() {
         <section className="generator-shell">
           <GeneratorControls
             baseColor={baseColor}
+            generationMode={generationMode}
             type={type}
             onBaseColorChange={setBaseColor}
+            onGenerationModeChange={handleGenerationModeChange}
             onTypeChange={handleTypeChange}
             onGenerate={generatePalette}
           />
 
           <div className="palette-canvas">
             <PaletteToolbar
-              paletteTypeLabel={selectedPaletteType?.label}
+              paletteTypeLabel={paletteTypeLabel}
               lockedCount={lockedCount}
               onUnlockAll={unlockAllColors}
               onCopyPalette={copyPalette}

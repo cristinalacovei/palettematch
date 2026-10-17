@@ -1,0 +1,37 @@
+{
+  "realm": "palettematch",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "PaletteMatch application user"
+      },
+      {
+        "name": "ADMIN",
+        "description": "PaletteMatch administrator"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "palettematch-frontend",
+      "name": "PaletteMatch Frontend",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "clientAuthenticatorType": "none",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ]
+}

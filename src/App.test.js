@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import HomePage from "./components/HomePage";
+import HomePage from "./features/home/HomePage";
 
 jest.mock(
   "react-router-dom",

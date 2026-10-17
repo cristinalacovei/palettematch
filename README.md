@@ -1,96 +1,64 @@
 # PaletteMatch
 
-A modern color design toolkit for generating, validating, previewing and exporting accessible color systems.
+A color design toolkit for creating, checking, previewing, and exporting accessible color systems.
 
-[Live demo](https://palettematch-beige.vercel.app) · [Repository](https://github.com/cristinalacovei/palettematch)
+**[Try the demo](https://palettematch-git-feature-demo-auth-cristina-lacoveis-projects.vercel.app/)** · [Repository](https://github.com/cristinalacovei/palettematch)
+
+> The live demo uses a separate Preview frontend, demo API, and demo database. The existing production deployment is kept separate. Demo data is temporary and should not be used for sensitive information.
 
 ## Overview
 
-PaletteMatch helps designers and developers move from a simple color palette to a practical, accessible interface theme. Sign in to the deployed demo to save palettes to the backend; signed-out use continues to save palettes in the browser.
+PaletteMatch helps designers and developers turn a color palette into a practical interface theme. It combines color exploration with accessibility checks, semantic design-system roles, UI previews, and developer-friendly exports.
 
-Instead of only generating HEX values, the application lets users:
+The app supports two ways to save palettes:
 
-- generate color harmonies;
-- extract colors from images;
-- save and organize palettes locally;
-- check WCAG contrast;
-- preview a palette in a dashboard interface;
-- assign semantic design-system roles;
-- export palettes as developer-ready code.
-
-Signed-out palettes are stored locally in the browser using `localStorage`. Signed-in palettes are stored by the PaletteMatch API and are scoped to the authenticated user.
+- **Without signing in:** palettes are saved locally in the browser using `localStorage`.
+- **In the hosted demo:** sign in with the demo password to save palettes to the demo API. Each successful sign-in creates an isolated demo identity, so demo users do not share saved palettes.
 
 ## Features
 
 ### Palette generator
 
-- Six harmony types:
-  - Analog
-  - Complementary
-  - Triadic
-  - Tetradic
-  - Monochromatic
-  - Split complementary
-- Base color picker
-- Lock individual colors before generating again
-- Edit colors using HEX, RGB and HSL values
-- Copy all color values
-- Save palettes to the local library
+- Generate six color harmonies: Analog, Complementary, Triadic, Tetradic, Monochromatic, and Split complementary.
+- Choose a base color and lock colors before generating again.
+- Edit colors using HEX, RGB, and HSL values.
+- Copy color values and save palettes to the library.
 
 ### Image palette extraction
 
-- Upload an image
-- Extract dominant colors
-- Create a palette from visual inspiration
-- Save the extracted result to the library
+- Upload an image and extract dominant colors.
+- Create a palette from visual inspiration and save it to the library.
 
 ### Palette library
 
-- Search by palette name or HEX value
-- Sort by newest, oldest, favorites or alphabetical order
-- Favorite palettes
-- Rename, duplicate and delete palettes
-- Copy individual colors or an entire palette
-- Export saved palettes
-- Open saved palettes in Accessibility Checker or UI Preview
+- Search by palette name or HEX value.
+- Sort by newest, oldest, favorites, or alphabetical order.
+- Favorite, rename, duplicate, and delete palettes.
+- Copy colors, export saved palettes, and open them in the accessibility checker or UI preview.
 
 ### Accessibility checker
 
-- Calculate contrast ratio between two colors
-- WCAG AA and AAA validation
-- Separate checks for:
-  - normal text;
-  - large text;
-  - UI components;
-- Live text and button preview
-- Import all colors from a saved palette
-- Automatically select the pair with the strongest contrast
-- Manually choose any palette color as text or background
+- Calculate color contrast ratios.
+- Check WCAG AA and AAA requirements for normal text, large text, and UI components.
+- Preview text and buttons, import colors from a saved palette, and choose text/background pairs manually.
 
-### UI Preview and Design System Builder
+### UI preview and design-system builder
 
-- Apply a saved palette to a dashboard preview
-- Assign semantic color roles:
-  - Background
-  - Surface
-  - Text
-  - Primary
-  - Accent
-- Modify roles manually
-- Check key interface combinations automatically
-- Save the design-system mapping back to the palette
-- Reopen a palette later with its saved roles
+- Apply a palette to a dashboard preview.
+- Assign semantic roles: Background, Surface, Text, Primary, and Accent.
+- Adjust roles manually and inspect important interface color combinations.
+- Save design-system mappings with palettes and reopen them later.
 
 ### Export
 
-Saved palettes can be exported as:
+Export saved palettes as:
 
 - CSS custom properties
 - SCSS variables
 - JSON
 - Tailwind configuration
 
-When a palette has a saved design system, the export uses semantic names:
+When a palette has a saved design system, exports use semantic names, for example:
 
 ```css
 :root {
@@ -102,16 +70,14 @@ When a palette has a saved design system, the export uses semantic names:
 }
 ```
 
-## Tech Stack
+## Tech stack
 
-- React
-- React Router DOM
-- Chroma.js
-- React Color
-- ColorThief
-- Lucide React
-- CSS
-- Vercel
+- **Frontend:** React, React Router DOM, JavaScript, CSS
+- **Color tools:** Chroma.js, React Color, ColorThief
+- **Backend:** Java 21, Spring Boot, Spring Security, Spring Data JPA
+- **Database and migrations:** PostgreSQL, Flyway
+- **Authentication:** Keycloak for local development; isolated password-based demo login with short-lived RSA-signed JWTs for the hosted demo
+- **Deployment:** Vercel (frontend), Render (demo API and demo PostgreSQL database)
 
 ## Routes
 
@@ -122,16 +88,17 @@ When a palette has a saved design system, the export uses semantic names:
 | `/from-image` | Image color extraction |
 | `/saved` | Saved palette library |
 | `/accessibility` | WCAG contrast checker |
-| `/preview` | UI Preview and Design System Builder |
+| `/preview` | UI preview and design-system builder |
 
-## Getting Started
+## Run locally
 
-### Prerequisites
+### Requirements
 
 - Node.js 18 or newer
-- npm
+- Java 21
+- Docker Desktop (for the local PostgreSQL and Keycloak services)
 
-### Installation
+### Install the frontend
 
 ```bash
 git clone https://github.com/cristinalacovei/palettematch.git
@@ -139,41 +106,30 @@ cd palettematch
 npm install
 ```
 
-### Run locally
+### Start backend services
 
-Local development defaults to Keycloak authentication with Authorization Code
-Flow and PKCE S256. Start the backend services from `backend`:
+From the `backend` directory:
 
 ```powershell
 docker compose up -d
-```
-
-Then start the Spring Boot backend from `backend`:
-
-```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-Run the frontend from the repository root:
+The local backend runs at `http://localhost:8080`. The local Keycloak service is available at `http://localhost:8180`.
+
+### Start the frontend
+
+From the repository root, in a separate terminal:
 
 ```bash
 npm start
 ```
 
-Open:
+Open `http://localhost:3000`.
 
-```text
-http://localhost:3000
-```
+Local development defaults to Keycloak authentication. The frontend authentication mode is selected at build time with `REACT_APP_AUTH_MODE` and defaults to `keycloak`. Copy `.env.example` to `.env.local` if you need to override local settings. The Keycloak URL, realm, and client ID can be configured with `REACT_APP_KEYCLOAK_URL`, `REACT_APP_KEYCLOAK_REALM`, and `REACT_APP_KEYCLOAK_CLIENT_ID`. Local API requests default to `http://localhost:8080`.
 
-Frontend authentication mode is selected at build time with
-`REACT_APP_AUTH_MODE`; it defaults to `keycloak`. Copy `.env.example` to
-`.env.local` to override the defaults. The Keycloak URL, realm, and client ID
-can be set with `REACT_APP_KEYCLOAK_URL`, `REACT_APP_KEYCLOAK_REALM`, and
-`REACT_APP_KEYCLOAK_CLIENT_ID`. Local API requests default to
-`http://localhost:8080`.
-
-### Production build
+### Build the frontend
 
 ```bash
 npm run build
@@ -181,43 +137,37 @@ npm run build
 
 The production files are generated in the `build` folder.
 
-## Deployment
+## Deployment notes
 
-The project is deployed with Vercel.
+The public demo is deployed separately from the existing production environment.
 
-For the deployed demo, set these Vercel environment variables for the
-production build:
+### Vercel frontend
+
+Configure these environment variables for the **Preview** environment only:
 
 ```text
 REACT_APP_AUTH_MODE=demo
-REACT_APP_API_BASE_URL=https://palettematch.onrender.com
+REACT_APP_API_BASE_URL=<public HTTPS URL of the demo Render API>
 ```
 
-`REACT_APP_API_BASE_URL` should be the public backend origin without a trailing
-API path. If the backend is deployed elsewhere, replace it with that public
-HTTPS origin. The backend must separately run with `APP_AUTH_MODE=demo` and
-its own BCrypt password hash and RSA signing-key secrets. Never add those
-backend secrets to Vercel variables; all `REACT_APP_*` values are embedded in
-public frontend assets at build time.
+After changing `REACT_APP_*` variables, redeploy the Preview deployment so the values are included in the frontend build. Do not switch the Production Branch or overwrite Production environment variables just to configure the demo.
 
-Demo sign-in prompts for the demo password configured for the backend. A
-successful sign-in creates a private, per-sign-in demo identity. Its access
-token lasts 15 minutes; signing in again creates a new isolated demo account.
+### Render demo API
 
-A `vercel.json` rewrite rule is used so React Router routes work correctly after a direct refresh:
+The demo API runs from the `feature/demo-auth` branch and uses its own PostgreSQL database. Configure the following on the demo API service only:
 
-```json
-{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
-```
+- `APP_AUTH_MODE=demo`
+- `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` for the separate demo database
+- `APP_CORS_ALLOWED_ORIGINS` set to the exact Vercel Preview origin
+- `DEMO_PASSWORD_BCRYPT`
+- `DEMO_JWT_PRIVATE_KEY_BASE64`
+- `DEMO_JWT_PUBLIC_KEY_BASE64`
 
-## Project Structure
+Use a dedicated RSA key pair for the demo. Keep the database password, BCrypt hash, and signing keys in Render environment variables; never commit them to Git or place backend secrets in Vercel variables. The frontend's `REACT_APP_*` values are embedded in public build assets and must not contain secrets.
+
+The demo access token lasts 15 minutes. Each successful sign-in creates a separate demo identity whose data is scheduled to expire after 30 days. Render's free PostgreSQL databases are temporary and may be deleted at the expiration date shown in the Render dashboard; check the database's Info page before relying on demo data.
+
+## Project structure
 
 ```text
 src/
@@ -234,25 +184,23 @@ src/
 │   ├── PaletteUIPreview.jsx
 │   ├── SavedPalettes.jsx
 │   └── ToggleTheme.jsx
-│
 ├── App.js
 ├── App.css
 └── index.css
+
+backend/
+└── Spring Boot API, persistence model, migrations, and tests
 ```
 
-## Future Improvements
+## Future improvements
 
-- Theme Studio: generate a complete theme from user preferences
-- Shades generator from `50` to `950`
-- Automatic contrast correction
-- Color blindness simulation
-- Add, remove and reorder palette colors
-- Additional UI Preview templates:
-  - landing page;
-  - mobile application;
-  - e-commerce interface;
-- Shareable palette links
-- Cloud synchronization with user accounts
+- Generate a complete theme from user preferences.
+- Add a shades generator from `50` to `950`.
+- Automatically suggest contrast corrections.
+- Add color-blindness simulation.
+- Add, remove, and reorder palette colors.
+- Expand UI preview templates for landing pages, mobile apps, and e-commerce.
+- Add shareable palette links.
 
 ## Author
 

@@ -16,6 +16,7 @@ import {
 import { getCurrentUser } from "../services/userApi";
 
 const AuthContext = createContext(null);
+const EMPTY_ROLES = [];
 
 export function AuthProvider({ children }) {
   const [isReady, setIsReady] = useState(false);
@@ -140,11 +141,8 @@ export function AuthProvider({ children }) {
     return logoutFromKeycloak();
   }, []);
 
-  const roles = useMemo(() => {
-    const realmRoles = keycloak.tokenParsed?.realm_access?.roles;
-
-    return Array.isArray(realmRoles) ? realmRoles : [];
-  }, [keycloak.tokenParsed]);
+  const realmRoles = keycloak.tokenParsed?.realm_access?.roles;
+  const roles = Array.isArray(realmRoles) ? realmRoles : EMPTY_ROLES;
 
   const value = useMemo(
     () => ({

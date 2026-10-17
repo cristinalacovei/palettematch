@@ -140,8 +140,11 @@ export function AuthProvider({ children }) {
     return logoutFromKeycloak();
   }, []);
 
-  const realmRoles = keycloak.tokenParsed?.realm_access?.roles;
-  const roles = Array.isArray(realmRoles) ? realmRoles : [];
+  const roles = useMemo(() => {
+    const realmRoles = keycloak.tokenParsed?.realm_access?.roles;
+
+    return Array.isArray(realmRoles) ? realmRoles : [];
+  }, [keycloak.tokenParsed]);
 
   const value = useMemo(
     () => ({

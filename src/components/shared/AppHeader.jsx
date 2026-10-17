@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import { Link, NavLink } from "react-router-dom";
 
@@ -14,6 +14,7 @@ import {
 import ThemeToggle from "./ToggleTheme";
 
 import { useAuth } from "../../auth/AuthContext";
+import DemoLoginForm from "../../auth/DemoLoginForm";
 
 const navItems = [
   {
@@ -39,7 +40,17 @@ const navItems = [
 ];
 
 function AppHeader() {
-  const { isReady, authenticated, currentUser, login, logout } = useAuth();
+  const {
+    isReady,
+    authenticated,
+    currentUser,
+    authError,
+    authMode,
+    login,
+    loginWithDemoPassword,
+    logout,
+  } = useAuth();
+  const [demoLoginOpen, setDemoLoginOpen] = useState(false);
 
   return (
     <header className="app-header">
@@ -75,11 +86,25 @@ function AppHeader() {
             <span className="app-header__user">{currentUser.username}</span>
           )}
 
-          {isReady && !authenticated && (
+          {isReady && !authenticated && authMode === "keycloak" && (
             <button className="nav-link" type="button" onClick={login}>
               <LogIn size={17} aria-hidden="true" />
 
               <span>Login</span>
+            </button>
+          )}
+
+          {isReady && !authenticated && authMode === "demo" && (
+            <button
+              className="nav-link"
+              type="button"
+              onClick={() => setDemoLoginOpen((open) => !open)}
+              aria-expanded={demoLoginOpen}
+              aria-controls="demo-login-title"
+            >
+              <LogIn size={17} aria-hidden="true" />
+
+              <span>Demo login</span>
             </button>
           )}
 
@@ -92,8 +117,21 @@ function AppHeader() {
           )}
 
           <ThemeToggle />
+
+          {authMode === "demo" && demoLoginOpen && !authenticated && (
+            <DemoLoginForm
+              onSubmit={loginWithDemoPassword}
+              onClose={() => setDemoLoginOpen(false)}
+              error={authError}
+            />
+          )}
         </div>
       </div>
+      {authError && (authMode === "keycloak" || !demoLoginOpen) && (
+        <p className="auth-status" role="alert">
+          {authError}
+        </p>
+      )}
     </header>
   );
 }

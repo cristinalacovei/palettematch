@@ -3,6 +3,8 @@ package com.palettematch.backend.entity;
 import java.time.Instant;
 import java.util.UUID;
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,10 +13,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
+import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
-@Table(name = "app_users")
+@Table(name = "app_users", uniqueConstraints = @UniqueConstraint(
+        name = "uk_app_users_provider_subject",
+        columnNames = {"auth_provider", "auth_subject"}))
 public class AppUser {
 
     @Id
@@ -22,8 +27,15 @@ public class AppUser {
     @UuidGenerator
     private UUID id;
 
-    @Column(name = "keycloak_subject", nullable = false, unique = true, length = 255)
-    private String keycloakSubject;
+    @Column(name = "auth_subject", nullable = false, length = 255)
+    private String authSubject;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, length = 20)
+    private AuthProvider authProvider;
+
+    @Column(name = "demo_expires_at")
+    private Instant demoExpiresAt;
 
     @Column(nullable = false, length = 100)
     private String username;
@@ -40,10 +52,21 @@ public class AppUser {
     protected AppUser() {
     }
 
-    public AppUser(String keycloakSubject, String username, String email) {
-        this.keycloakSubject = keycloakSubject;
+    public AppUser(String authSubject, String username, String email) {
+        this(authSubject, username, email, AuthProvider.KEYCLOAK, null);
+    }
+
+    public AppUser(
+            String authSubject,
+            String username,
+            String email,
+            AuthProvider authProvider,
+            Instant demoExpiresAt) {
+        this.authSubject = authSubject;
         this.username = username;
         this.email = email;
+        this.authProvider = authProvider;
+        this.demoExpiresAt = demoExpiresAt;
     }
 
     @PrePersist
@@ -62,8 +85,16 @@ public class AppUser {
         return id;
     }
 
-    public String getKeycloakSubject() {
-        return keycloakSubject;
+    public String getAuthSubject() {
+        return authSubject;
+    }
+
+    public AuthProvider getAuthProvider() {
+        return authProvider;
+    }
+
+    public Instant getDemoExpiresAt() {
+        return demoExpiresAt;
     }
 
     public String getUsername() {

@@ -4,17 +4,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.palettematch.backend.config.SecurityConfig;
 import com.palettematch.backend.config.WebConfig;
 import com.palettematch.backend.entity.AppUser;
 import com.palettematch.backend.service.CurrentUserService;
+import com.palettematch.backend.service.DemoIdentityUnavailableException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
@@ -45,6 +48,14 @@ class SecurityEndpointTest {
     }
 
     @Test
+    void demoLoginIsNotPublicInKeycloakMode() throws Exception {
+        mockMvc.perform(post("/api/auth/demo/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"password\":\"not-a-secret\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void authenticatedCurrentUserRequestIsAccepted() throws Exception {
         when(currentUserService.resolve(any(Jwt.class)))
                 .thenReturn(new AppUser("subject", "cristina", "cristina@example.com"));
@@ -55,5 +66,14 @@ class SecurityEndpointTest {
                                 .claim("preferred_username", "cristina")
                                 .claim("email", "cristina@example.com"))))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void unavailableDemoIdentityReturnsUnauthorized() throws Exception {
+        when(currentUserService.resolve(any(Jwt.class)))
+                .thenThrow(new DemoIdentityUnavailableException());
+
+        mockMvc.perform(get("/api/users/me").with(jwt()))
+                .andExpect(status().isUnauthorized());
     }
 }

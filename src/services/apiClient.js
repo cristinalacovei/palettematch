@@ -1,7 +1,11 @@
+import { AUTH_MODE } from "../auth/authMode";
+import { expireDemoSession, getDemoSession } from "../auth/demoSession";
+import { KEYCLOAK_SESSION_EXPIRED_EVENT } from "../auth/sessionEvents";
 import { getValidAccessToken } from "../auth/keycloak";
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8080";
+  process.env.REACT_APP_API_BASE_URL ||
+  (process.env.NODE_ENV === "production" ? "" : "http://localhost:8080");
 
 export class ApiError extends Error {
   constructor(message, status, responseBody = null) {
@@ -26,6 +30,13 @@ async function readResponseBody(response) {
 }
 
 export async function apiRequest(path, options = {}) {
+  if (!API_BASE_URL && process.env.NODE_ENV === "production") {
+    throw new ApiError(
+      "REACT_APP_API_BASE_URL must be configured for the production frontend.",
+      0,
+    );
+  }
+
   const {
     authenticated = true,
     headers = {},
@@ -43,7 +54,10 @@ export async function apiRequest(path, options = {}) {
   }
 
   if (authenticated) {
-    const token = await getValidAccessToken();
+    const token =
+      AUTH_MODE === "demo"
+        ? getDemoSession()?.accessToken || null
+        : await getValidAccessToken();
 
     if (!token) {
       throw new ApiError("Authentication is required.", 401);
@@ -55,7 +69,6 @@ export async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...requestOptions,
     headers: requestHeaders,
-
     body:
       body === undefined
         ? undefined
@@ -71,6 +84,14 @@ export async function apiRequest(path, options = {}) {
   const responseBody = await readResponseBody(response);
 
   if (!response.ok) {
+    if (authenticated && response.status === 401) {
+      if (AUTH_MODE === "demo") {
+        expireDemoSession();
+      } else {
+        window.dispatchEvent(new Event(KEYCLOAK_SESSION_EXPIRED_EVENT));
+      }
+    }
+
     const message =
       responseBody?.message || `Request failed with status ${response.status}.`;
 

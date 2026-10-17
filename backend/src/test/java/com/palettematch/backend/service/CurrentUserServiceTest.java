@@ -51,8 +51,25 @@ class CurrentUserServiceTest {
 
         assertThatThrownBy(() -> new CurrentUserService(appUserRepository, AuthMode.DEMO)
                 .resolve(jwt("unknown", "Visitor", "unknown@demo.invalid")))
-                .isInstanceOf(InvalidUserClaimsException.class)
-                .hasMessage("Demo identity is not registered.");
+                .isInstanceOf(DemoIdentityUnavailableException.class);
+        verify(appUserRepository, never()).save(any(AppUser.class));
+    }
+
+    @Test
+    void expiredDemoIdentityIsRejectedWithoutChangingItsProfile() {
+        AppUser expiredDemoUser = new AppUser(
+                "expired-subject",
+                "Demo visitor",
+                "expired-subject@demo.invalid",
+                AuthProvider.DEMO,
+                Instant.now().minusSeconds(1));
+        when(appUserRepository.findByAuthProviderAndAuthSubject(AuthProvider.DEMO, "expired-subject"))
+                .thenReturn(Optional.of(expiredDemoUser));
+
+        assertThatThrownBy(() -> new CurrentUserService(appUserRepository, AuthMode.DEMO)
+                .resolve(jwt("expired-subject", "Changed name", "changed@example.com")))
+                .isInstanceOf(DemoIdentityUnavailableException.class);
+        assertThat(expiredDemoUser.getUsername()).isEqualTo("Demo visitor");
         verify(appUserRepository, never()).save(any(AppUser.class));
     }
 

@@ -71,7 +71,26 @@ Set `APP_AUTH_MODE=demo` only in the deployed backend to enable the
 a 15-minute RSA-signed access token. The API remains protected; demo tokens
 must have the configured issuer and audience and a valid signature and expiry.
 Each successful login creates a distinct demo identity. Its `demo_expires_at`
-is 30 days after sign-in. This phase does not run any cleanup job.
+is 30 days after sign-in. Requests made with an expired or deleted demo identity
+are rejected. The backend deletes expired demo identities at startup and every
+six hours while it is running. Deletion is transactional and relies on the
+existing database foreign-key cascades to remove palettes, colors, and design
+systems; Keycloak users are excluded by provider.
+
+The demo login allows five attempts per client address per minute and returns
+HTTP 429 with a `Retry-After` header when the limit is reached. The limiter is
+in-memory and local to one backend process. It keys on the first
+`X-Forwarded-For` address when present, so deployment must ensure the trusted
+Render ingress overwrites or sanitizes that header; otherwise callers could
+spoof addresses to evade per-client limits. It is reset by process restarts and
+does not coordinate multiple instances. It accepts up to 10,000 active address
+windows and temporarily rejects new addresses rather than evicting existing
+limits if that capacity is reached. The Render free instance may sleep, so
+scheduled cleanup cannot run while it is asleep; expired demo identities remain
+inaccessible and are purged on startup or when the running instance next reaches
+a cleanup interval. For guaranteed cleanup timing or distributed rate limiting,
+use an external scheduled worker and shared rate-limit storage before scaling
+or relying on a strict deletion deadline.
 
 Demo mode requires these backend-only settings:
 

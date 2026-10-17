@@ -11,6 +11,7 @@ import com.palettematch.backend.config.SecurityConfig;
 import com.palettematch.backend.config.WebConfig;
 import com.palettematch.backend.entity.AppUser;
 import com.palettematch.backend.service.CurrentUserService;
+import com.palettematch.backend.service.DemoIdentityUnavailableException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -65,5 +66,14 @@ class SecurityEndpointTest {
                                 .claim("preferred_username", "cristina")
                                 .claim("email", "cristina@example.com"))))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void unavailableDemoIdentityReturnsUnauthorized() throws Exception {
+        when(currentUserService.resolve(any(Jwt.class)))
+                .thenThrow(new DemoIdentityUnavailableException());
+
+        mockMvc.perform(get("/api/users/me").with(jwt()))
+                .andExpect(status().isUnauthorized());
     }
 }

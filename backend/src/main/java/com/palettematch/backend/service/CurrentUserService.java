@@ -1,5 +1,7 @@
 package com.palettematch.backend.service;
 
+import java.time.Instant;
+
 import com.palettematch.backend.config.AuthMode;
 import com.palettematch.backend.entity.AppUser;
 import com.palettematch.backend.entity.AuthProvider;
@@ -32,14 +34,22 @@ public class CurrentUserService {
                 ? AuthProvider.DEMO
                 : AuthProvider.KEYCLOAK;
 
-        return appUserRepository.findByAuthProviderAndAuthSubject(provider, subject)
-                .map(existingUser -> updateIfChanged(existingUser, username, email))
-                .orElseGet(() -> {
-                    if (provider == AuthProvider.DEMO) {
-                        throw new InvalidUserClaimsException("Demo identity is not registered.");
-                    }
-                    return appUserRepository.save(new AppUser(subject, username, email));
-                });
+        AppUser existingUser = appUserRepository.findByAuthProviderAndAuthSubject(provider, subject)
+                .orElse(null);
+        if (existingUser == null) {
+            if (provider == AuthProvider.DEMO) {
+                throw new DemoIdentityUnavailableException();
+            }
+            return appUserRepository.save(new AppUser(subject, username, email));
+        }
+
+        if (provider == AuthProvider.DEMO
+                && (existingUser.getDemoExpiresAt() == null
+                        || !existingUser.getDemoExpiresAt().isAfter(Instant.now()))) {
+            throw new DemoIdentityUnavailableException();
+        }
+
+        return updateIfChanged(existingUser, username, email);
     }
 
     private AppUser updateIfChanged(AppUser user, String username, String email) {

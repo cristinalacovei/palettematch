@@ -7,7 +7,10 @@ import java.util.UUID;
 
 import com.palettematch.backend.entity.AppUser;
 import com.palettematch.backend.entity.AuthProvider;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
 
@@ -16,4 +19,10 @@ public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
     List<AppUser> findByAuthProviderAndDemoExpiresAtBefore(
             AuthProvider authProvider,
             Instant expiresBefore);
+
+    @Modifying
+    @Query(value = "DELETE FROM app_users "
+            + "WHERE auth_provider = 'DEMO' AND demo_expires_at <= :now",
+            nativeQuery = true)
+    int deleteExpiredDemoIdentities(@Param("now") Instant now);
 }

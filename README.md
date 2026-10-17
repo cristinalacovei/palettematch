@@ -6,7 +6,7 @@ A modern color design toolkit for generating, validating, previewing and exporti
 
 ## Overview
 
-PaletteMatch helps designers and developers move from a simple color palette to a practical, accessible interface theme.
+PaletteMatch helps designers and developers move from a simple color palette to a practical, accessible interface theme. Sign in to the deployed demo to save palettes to the backend; signed-out use continues to save palettes in the browser.
 
 Instead of only generating HEX values, the application lets users:
 
@@ -18,7 +18,7 @@ Instead of only generating HEX values, the application lets users:
 - assign semantic design-system roles;
 - export palettes as developer-ready code.
 
-All saved data is stored locally in the browser using `localStorage`. No backend or user account is required.
+Signed-out palettes are stored locally in the browser using `localStorage`. Signed-in palettes are stored by the PaletteMatch API and are scoped to the authenticated user.
 
 ## Features
 
@@ -141,6 +141,21 @@ npm install
 
 ### Run locally
 
+Local development defaults to Keycloak authentication with Authorization Code
+Flow and PKCE S256. Start the backend services from `backend`:
+
+```powershell
+docker compose up -d
+```
+
+Then start the Spring Boot backend from `backend`:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Run the frontend from the repository root:
+
 ```bash
 npm start
 ```
@@ -150,6 +165,13 @@ Open:
 ```text
 http://localhost:3000
 ```
+
+Frontend authentication mode is selected at build time with
+`REACT_APP_AUTH_MODE`; it defaults to `keycloak`. Copy `.env.example` to
+`.env.local` to override the defaults. The Keycloak URL, realm, and client ID
+can be set with `REACT_APP_KEYCLOAK_URL`, `REACT_APP_KEYCLOAK_REALM`, and
+`REACT_APP_KEYCLOAK_CLIENT_ID`. Local API requests default to
+`http://localhost:8080`.
 
 ### Production build
 
@@ -162,6 +184,25 @@ The production files are generated in the `build` folder.
 ## Deployment
 
 The project is deployed with Vercel.
+
+For the deployed demo, set these Vercel environment variables for the
+production build:
+
+```text
+REACT_APP_AUTH_MODE=demo
+REACT_APP_API_BASE_URL=https://palettematch.onrender.com
+```
+
+`REACT_APP_API_BASE_URL` should be the public backend origin without a trailing
+API path. If the backend is deployed elsewhere, replace it with that public
+HTTPS origin. The backend must separately run with `APP_AUTH_MODE=demo` and
+its own BCrypt password hash and RSA signing-key secrets. Never add those
+backend secrets to Vercel variables; all `REACT_APP_*` values are embedded in
+public frontend assets at build time.
+
+Demo sign-in prompts for the demo password configured for the backend. A
+successful sign-in creates a private, per-sign-in demo identity. Its access
+token lasts 15 minutes; signing in again creates a new isolated demo account.
 
 A `vercel.json` rewrite rule is used so React Router routes work correctly after a direct refresh:
 

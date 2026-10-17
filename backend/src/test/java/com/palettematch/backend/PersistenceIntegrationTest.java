@@ -1,6 +1,7 @@
 package com.palettematch.backend;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,8 @@ import com.palettematch.backend.repository.AppUserRepository;
 import com.palettematch.backend.repository.PaletteRepository;
 import com.palettematch.backend.mapper.PaletteMapper;
 import com.palettematch.backend.service.CurrentUserService;
+import com.palettematch.backend.service.DemoIdentityRetentionService;
+import com.palettematch.backend.service.DemoIdentityUnavailableException;
 import com.palettematch.backend.exception.PaletteNotFoundException;
 import com.palettematch.backend.service.PaletteService;
 import org.junit.jupiter.api.Test;
@@ -392,6 +395,64 @@ class PersistenceIntegrationTest {
                         Long.class)
                 .setParameter("paletteId", firstPaletteId)
                 .getSingleResult()).isZero();
+    }
+
+    @Test
+    void expiredDemoIdentityCannotAccessPalettesAndCleanupCascadesWithoutDeletingOtherUsers() {
+        Instant now = Instant.now();
+        AppUser expiredDemo = appUserRepository.saveAndFlush(new AppUser(
+                "expired-demo-subject",
+                "Demo visitor",
+                "expired-demo@demo.invalid",
+                AuthProvider.DEMO,
+                now.minusNanos(1)));
+        AppUser activeDemo = appUserRepository.saveAndFlush(demoUser("active-demo-subject", now));
+        AppUser keycloakUser = appUserRepository.saveAndFlush(
+                new AppUser("keycloak-subject", "keycloak-user", "keycloak@example.com"));
+        Palette expiredPalette = saveDemoPalette(expiredDemo, "Expired palette");
+        Palette activePalette = saveDemoPalette(activeDemo, "Active palette");
+        Palette keycloakPalette = saveDemoPalette(keycloakUser, "Keycloak palette");
+        UUID expiredUserId = expiredDemo.getId();
+        UUID expiredPaletteId = expiredPalette.getId();
+        UUID activeUserId = activeDemo.getId();
+        UUID activePaletteId = activePalette.getId();
+        UUID keycloakUserId = keycloakUser.getId();
+        UUID keycloakPaletteId = keycloakPalette.getId();
+
+        CurrentUserService demoCurrentUserService =
+                new CurrentUserService(appUserRepository, AuthMode.DEMO);
+        PaletteService demoPaletteService = new PaletteService(
+                paletteRepository,
+                demoCurrentUserService,
+                new PaletteMapper());
+        assertThatThrownBy(() -> demoPaletteService.list(demoJwt(expiredDemo.getAuthSubject(), expiredDemo)))
+                .isInstanceOf(DemoIdentityUnavailableException.class);
+        assertThatThrownBy(() -> demoCurrentUserService.resolve(
+                        demoJwt(expiredDemo.getAuthSubject(), expiredDemo)))
+                .isInstanceOf(DemoIdentityUnavailableException.class);
+
+        entityManager.flush();
+        int deleted = new DemoIdentityRetentionService(appUserRepository).purgeExpiredIdentities(now);
+        entityManager.clear();
+
+        assertThat(deleted).isEqualTo(1);
+        assertThat(appUserRepository.findById(expiredUserId)).isEmpty();
+        assertThat(paletteRepository.findById(expiredPaletteId)).isEmpty();
+        assertThat(entityManager.createQuery(
+                        "select count(color) from PaletteColor color where color.palette.id = :paletteId",
+                        Long.class)
+                .setParameter("paletteId", expiredPaletteId)
+                .getSingleResult()).isZero();
+        assertThat(entityManager.createQuery(
+                        "select count(designSystem) from PaletteDesignSystem designSystem "
+                                + "where designSystem.palette.id = :paletteId",
+                        Long.class)
+                .setParameter("paletteId", expiredPaletteId)
+                .getSingleResult()).isZero();
+        assertThat(appUserRepository.findById(activeUserId)).isPresent();
+        assertThat(paletteRepository.findById(activePaletteId)).isPresent();
+        assertThat(appUserRepository.findById(keycloakUserId)).isPresent();
+        assertThat(paletteRepository.findById(keycloakPaletteId)).isPresent();
     }
 
     @Test

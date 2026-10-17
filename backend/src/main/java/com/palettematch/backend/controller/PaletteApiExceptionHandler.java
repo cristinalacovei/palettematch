@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.palettematch.backend.exception.PaletteNotFoundException;
+import com.palettematch.backend.service.DemoIdentityUnavailableException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,6 +19,12 @@ public class PaletteApiExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse paletteNotFound(PaletteNotFoundException exception) {
         return new ErrorResponse(404, exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(DemoIdentityUnavailableException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErrorResponse demoIdentityUnavailable(DemoIdentityUnavailableException exception) {
+        return new ErrorResponse(401, exception.getMessage(), Map.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

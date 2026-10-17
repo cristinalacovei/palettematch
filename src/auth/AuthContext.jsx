@@ -13,47 +13,59 @@ import {
   loginToKeycloak,
   logoutFromKeycloak,
 } from "./keycloak";
+import { AUTH_MODE } from "./authMode";
+import {
+  clearDemoSession,
+  expireDemoSession,
+  getDemoSession,
+  getDemoSessionExpiredEventName,
+  hasStoredDemoSession,
+  saveDemoSession,
+} from "./demoSession";
+import { KEYCLOAK_SESSION_EXPIRED_EVENT } from "./sessionEvents";
 import { getCurrentUser } from "../services/userApi";
+import { loginDemo } from "../services/demoAuthApi";
+import { ApiError } from "../services/apiClient";
 
 const AuthContext = createContext(null);
 const EMPTY_ROLES = [];
 
 export function AuthProvider({ children }) {
   const [isReady, setIsReady] = useState(false);
-
   const [authenticated, setAuthenticated] = useState(false);
-
   const [currentUser, setCurrentUser] = useState(null);
-
   const [authError, setAuthError] = useState("");
 
   const loadCurrentUser = useCallback(async () => {
-    console.log("[AUTH] loadCurrentUser called");
+    const hasValidToken =
+      AUTH_MODE === "demo"
+        ? Boolean(getDemoSession())
+        : Boolean(keycloak.authenticated);
 
-    console.log("[AUTH] authenticated:", keycloak.authenticated);
-
-    if (!keycloak.authenticated) {
-      console.log("[AUTH] skipping /api/users/me");
-
+    if (!hasValidToken) {
       setCurrentUser(null);
-      return;
+      return false;
     }
 
     try {
-      console.log("[AUTH] calling /api/users/me");
-
       const user = await getCurrentUser();
-
-      console.log("[AUTH] current user:", user);
-
       setCurrentUser(user);
       setAuthError("");
+      return true;
     } catch (error) {
       console.error("[AUTH] Could not load current user:", error);
-
       setCurrentUser(null);
-
-      setAuthError("Could not load your PaletteMatch account.");
+      if (error instanceof ApiError && error.status === 401) {
+        if (AUTH_MODE === "demo") {
+          expireDemoSession();
+        } else {
+          setAuthenticated(false);
+          setAuthError("Your Keycloak session expired. Please sign in again.");
+        }
+      } else {
+        setAuthError("Could not load your PaletteMatch account. Please try again.");
+      }
+      return false;
     }
   }, []);
 
@@ -61,39 +73,36 @@ export function AuthProvider({ children }) {
     let mounted = true;
 
     async function initialize() {
+      if (AUTH_MODE === "demo") {
+        const hadStoredDemoSession = hasStoredDemoSession();
+        const demoSession = getDemoSession();
+        if (demoSession) {
+          setAuthenticated(true);
+          await loadCurrentUser();
+        } else if (hadStoredDemoSession) {
+          setAuthError("Your demo session expired. Please sign in again.");
+        }
+        if (mounted) {
+          setIsReady(true);
+        }
+        return;
+      }
+
       try {
         const isAuthenticated = await initializeKeycloak();
-
-        console.log("[AUTH] init result:", isAuthenticated);
-
-        console.log("[AUTH] keycloak.authenticated:", keycloak.authenticated);
-
-        console.log("[AUTH] token parsed:", {
-          sub: keycloak.tokenParsed?.sub,
-          username: keycloak.tokenParsed?.preferred_username,
-          email: keycloak.tokenParsed?.email,
-        });
-
         if (!mounted) {
           return;
         }
 
         const loggedIn = Boolean(isAuthenticated || keycloak.authenticated);
-
         setAuthenticated(loggedIn);
-
         if (loggedIn) {
-          console.log("[AUTH] loading current user...");
-
           await loadCurrentUser();
         } else {
-          console.log("[AUTH] user is not authenticated");
-
           setCurrentUser(null);
         }
       } catch (error) {
         console.error("[AUTH] Keycloak initialization failed:", error);
-
         if (mounted) {
           setAuthError("Authentication service is unavailable.");
         }
@@ -112,7 +121,7 @@ export function AuthProvider({ children }) {
   }, [loadCurrentUser]);
 
   useEffect(() => {
-    if (!authenticated) {
+    if (!authenticated || AUTH_MODE !== "keycloak") {
       return undefined;
     }
 
@@ -121,10 +130,9 @@ export function AuthProvider({ children }) {
         await keycloak.updateToken(60);
       } catch (error) {
         console.error("Token refresh failed.", error);
-
         setAuthenticated(false);
-
         setCurrentUser(null);
+        setAuthError("Your Keycloak session expired. Please sign in again.");
       }
     }, 30000);
 
@@ -133,16 +141,108 @@ export function AuthProvider({ children }) {
     };
   }, [authenticated]);
 
+  useEffect(() => {
+    if (AUTH_MODE !== "keycloak") {
+      return undefined;
+    }
+
+    const handleExpired = () => {
+      setAuthenticated(false);
+      setCurrentUser(null);
+      setAuthError("Your Keycloak session expired. Please sign in again.");
+    };
+    window.addEventListener(KEYCLOAK_SESSION_EXPIRED_EVENT, handleExpired);
+    return () => window.removeEventListener(KEYCLOAK_SESSION_EXPIRED_EVENT, handleExpired);
+  }, []);
+
+  useEffect(() => {
+    if (AUTH_MODE !== "demo") {
+      return undefined;
+    }
+
+    const handleExpired = () => {
+      setAuthenticated(false);
+      setCurrentUser(null);
+      setAuthError("Your demo session expired. Please sign in again.");
+    };
+    const eventName = getDemoSessionExpiredEventName();
+    window.addEventListener(eventName, handleExpired);
+    return () => window.removeEventListener(eventName, handleExpired);
+  }, []);
+
+  useEffect(() => {
+    if (AUTH_MODE !== "demo" || !authenticated) {
+      return undefined;
+    }
+
+    const session = getDemoSession();
+    if (!session) {
+      expireDemoSession();
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(
+      expireDemoSession,
+      Math.max(0, session.expiresAt - Date.now()),
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [authenticated]);
+
   const login = useCallback(() => {
+    if (AUTH_MODE === "demo") {
+      return undefined;
+    }
     return loginToKeycloak();
   }, []);
 
   const logout = useCallback(() => {
+    if (AUTH_MODE === "demo") {
+      clearDemoSession();
+      setAuthenticated(false);
+      setCurrentUser(null);
+      setAuthError("");
+      return Promise.resolve();
+    }
     return logoutFromKeycloak();
   }, []);
 
+  const loginWithDemoPassword = useCallback(async (password) => {
+    setAuthError("");
+    try {
+      const response = await loginDemo(password);
+      saveDemoSession(response.accessToken, response.expiresIn);
+      setAuthenticated(true);
+      const accountLoaded = await loadCurrentUser();
+      if (!accountLoaded) {
+        clearDemoSession();
+        setAuthenticated(false);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      clearDemoSession();
+      setAuthenticated(false);
+      setCurrentUser(null);
+
+      if (error instanceof ApiError && error.status === 401) {
+        setAuthError("That demo password was not accepted. Please try again.");
+      } else if (error instanceof ApiError) {
+        setAuthError(
+          `The demo sign-in service returned an error (${error.status}). Please try again later.`,
+        );
+      } else {
+        console.error("Demo sign-in failed.", error);
+        setAuthError("The demo sign-in service is unavailable. Please try again later.");
+      }
+      return false;
+    }
+  }, [loadCurrentUser]);
+
   const realmRoles = keycloak.tokenParsed?.realm_access?.roles;
-  const roles = Array.isArray(realmRoles) ? realmRoles : EMPTY_ROLES;
+  const roles =
+    AUTH_MODE === "keycloak" && Array.isArray(realmRoles)
+      ? realmRoles
+      : EMPTY_ROLES;
 
   const value = useMemo(
     () => ({
@@ -150,12 +250,12 @@ export function AuthProvider({ children }) {
       authenticated,
       currentUser,
       authError,
+      authMode: AUTH_MODE,
       roles,
-
       login,
+      loginWithDemoPassword,
       logout,
       refreshCurrentUser: loadCurrentUser,
-
       hasRole: (role) => roles.includes(role),
     }),
     [
@@ -165,6 +265,7 @@ export function AuthProvider({ children }) {
       authError,
       roles,
       login,
+      loginWithDemoPassword,
       logout,
       loadCurrentUser,
     ],
